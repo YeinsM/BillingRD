@@ -14,7 +14,8 @@ public sealed class BillingDbContext(
     DbContextOptions<BillingDbContext> options,
     ICurrentBusinessContext currentBusinessContext) : DbContext(options)
 {
-    public Guid? CurrentBusinessId => currentBusinessContext.BusinessId;
+    // Guid.Empty is never a valid Business id in the domain, so unresolved contexts safely match zero scoped rows.
+    public Guid CurrentBusinessId => currentBusinessContext.BusinessId ?? Guid.Empty;
 
     public DbSet<Business> Businesses => Set<Business>();
     public DbSet<Branch> Branches => Set<Branch>();
@@ -27,14 +28,10 @@ public sealed class BillingDbContext(
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BillingDbContext).Assembly);
 
-        // Fail closed: without a trusted business context, scoped queries return no rows.
-        modelBuilder.Entity<Branch>()
-            .HasQueryFilter(branch => CurrentBusinessId.HasValue && branch.BusinessId == CurrentBusinessId.Value);
-        modelBuilder.Entity<BusinessMembership>()
-            .HasQueryFilter(membership => CurrentBusinessId.HasValue && membership.BusinessId == CurrentBusinessId.Value);
-        modelBuilder.Entity<Product>()
-            .HasQueryFilter(product => CurrentBusinessId.HasValue && product.BusinessId == CurrentBusinessId.Value);
-        modelBuilder.Entity<Customer>()
-            .HasQueryFilter(customer => CurrentBusinessId.HasValue && customer.BusinessId == CurrentBusinessId.Value);
+        // Fail closed: without a trusted business context, CurrentBusinessId is Guid.Empty and no scoped row can match.
+        modelBuilder.Entity<Branch>().HasQueryFilter(branch => branch.BusinessId == CurrentBusinessId);
+        modelBuilder.Entity<BusinessMembership>().HasQueryFilter(membership => membership.BusinessId == CurrentBusinessId);
+        modelBuilder.Entity<Product>().HasQueryFilter(product => product.BusinessId == CurrentBusinessId);
+        modelBuilder.Entity<Customer>().HasQueryFilter(customer => customer.BusinessId == CurrentBusinessId);
     }
 }
