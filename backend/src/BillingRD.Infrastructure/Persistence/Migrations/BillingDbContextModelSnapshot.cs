@@ -29,7 +29,7 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.Property<string>("Name").IsRequired().HasMaxLength(160).HasColumnType("character varying(160)");
             b.Property<string>("TaxId").HasMaxLength(20).HasColumnType("character varying(20)");
             b.HasKey("Id");
-            b.HasIndex("TaxId").IsUnique().HasFilter("\"TaxId\" IS NOT NULL");
+            b.HasIndex("TaxId").IsUnique().HasFilter(""TaxId" IS NOT NULL");
             b.ToTable("businesses");
         });
 
@@ -56,7 +56,7 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.Property<decimal>("SalePrice").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
             b.Property<string>("Sku").IsRequired().HasMaxLength(80).HasColumnType("character varying(80)");
             b.HasKey("Id");
-            b.HasIndex("BusinessId", "Barcode").IsUnique().HasFilter("\"Barcode\" IS NOT NULL");
+            b.HasIndex("BusinessId", "Barcode").IsUnique().HasFilter(""Barcode" IS NOT NULL");
             b.HasIndex("BusinessId", "Sku").IsUnique();
             b.ToTable("products");
         });
@@ -72,7 +72,7 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.Property<string>("Phone").HasMaxLength(40).HasColumnType("character varying(40)");
             b.Property<string>("TaxId").HasMaxLength(20).HasColumnType("character varying(20)");
             b.HasKey("Id");
-            b.HasIndex("BusinessId", "TaxId").IsUnique().HasFilter("\"TaxId\" IS NOT NULL");
+            b.HasIndex("BusinessId", "TaxId").IsUnique().HasFilter(""TaxId" IS NOT NULL");
             b.ToTable("customers");
         });
 
@@ -95,6 +95,7 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.Property<DateTimeOffset>("CreatedAtUtc").HasColumnType("timestamp with time zone");
             b.Property<string>("Email").IsRequired().HasMaxLength(320).HasColumnType("character varying(320)");
             b.Property<bool>("IsActive").HasColumnType("boolean");
+            b.Property<string>("PasswordHash").IsRequired().HasMaxLength(512).HasColumnType("character varying(512)");
             b.HasKey("Id");
             b.HasIndex("Email").IsUnique();
             b.ToTable("users");
