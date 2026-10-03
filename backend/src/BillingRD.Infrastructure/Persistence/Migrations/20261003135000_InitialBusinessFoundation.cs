@@ -106,12 +106,12 @@ public partial class InitialBusinessFoundation : Migration
                 table.ForeignKey("FK_business_memberships_users_UserId", x => x.UserId, "users", "Id", onDelete: ReferentialAction.Cascade);
             });
 
-        migrationBuilder.CreateIndex("IX_businesses_TaxId", "businesses", "TaxId", unique: true, filter: ""TaxId" IS NOT NULL");
+        migrationBuilder.CreateIndex("IX_businesses_TaxId", "businesses", "TaxId", unique: true, filter: "\"TaxId\" IS NOT NULL");
         migrationBuilder.CreateIndex("IX_users_Email", "users", "Email", unique: true);
         migrationBuilder.CreateIndex("IX_branches_BusinessId_Name", "branches", new[] { "BusinessId", "Name" }, unique: true);
-        migrationBuilder.CreateIndex("IX_customers_BusinessId_TaxId", "customers", new[] { "BusinessId", "TaxId" }, unique: true, filter: ""TaxId" IS NOT NULL");
+        migrationBuilder.CreateIndex("IX_customers_BusinessId_TaxId", "customers", new[] { "BusinessId", "TaxId" }, unique: true, filter: "\"TaxId\" IS NOT NULL");
         migrationBuilder.CreateIndex("IX_products_BusinessId_Sku", "products", new[] { "BusinessId", "Sku" }, unique: true);
-        migrationBuilder.CreateIndex("IX_products_BusinessId_Barcode", "products", new[] { "BusinessId", "Barcode" }, unique: true, filter: ""Barcode" IS NOT NULL");
+        migrationBuilder.CreateIndex("IX_products_BusinessId_Barcode", "products", new[] { "BusinessId", "Barcode" }, unique: true, filter: "\"Barcode\" IS NOT NULL");
         migrationBuilder.CreateIndex("IX_business_memberships_BusinessId_UserId", "business_memberships", new[] { "BusinessId", "UserId" }, unique: true);
         migrationBuilder.CreateIndex("IX_business_memberships_UserId", "business_memberships", "UserId");
     }
