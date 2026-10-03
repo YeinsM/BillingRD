@@ -33,13 +33,25 @@ Los recursos business-scoped se filtran usando un contexto de negocio confiable 
 Sin contexto confiable, las consultas deben fallar cerradas.
 
 ## ADR-007 — Autorización por membresía — 2026-10-03
-Estado: parcialmente adoptado.
+Estado: adoptado.
 Un UserAccount puede pertenecer a uno o más negocios mediante BusinessMembership y un BusinessRole.
 Roles iniciales: Owner, Administrator, Cashier, InventoryManager.
-El proveedor/mecanismo de autenticación (cookies/OIDC/etc.) sigue pendiente y no se simula con BusinessId del cliente.
+El BusinessId activo nunca se confía por venir del cliente: se activa únicamente después de verificar una membresía
+y se vuelve a comprobar en cada request antes de poblar CurrentBusinessContext.
 
 ## ADR-008 — EF Core + Npgsql — 2026-10-03
 Estado: adoptado.
 Persistencia relacional con EF Core 10 y Npgsql sobre PostgreSQL.
 Motivo: migrations, transacciones, constraints, query filters, integración .NET 10 y bajo costo de mantenimiento.
 No se añade repositorio genérico por encima de EF Core; se crearán abstracciones solo cuando un caso de uso lo justifique.
+
+## ADR-009 — Autenticación cookie para el MVP — 2026-10-03
+Estado: adoptado.
+La API usa una cookie ASP.NET Core cifrada/firmada, HttpOnly y SameSite=Strict, con sesión deslizante de 8 horas.
+Las contraseñas se almacenan exclusivamente como hashes generados/verificados por ASP.NET Core PasswordHasher.
+Registro y login tienen rate limit. No se almacenan tokens de acceso en localStorage.
+
+Motivo: para una SPA/PWA servida same-site con la API, la cookie HttpOnly reduce exposición del secreto de sesión
+al JavaScript del navegador y mantiene el MVP simple. Si web y API pasan a sitios distintos, o antes de exposición
+pública con escenarios cross-site, se debe revisar política de cookies/CORS y añadir la estrategia antiforgery
+correspondiente antes de considerar el flujo listo para producción.
