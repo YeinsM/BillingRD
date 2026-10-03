@@ -1,3 +1,4 @@
+using System.Net.Mail;
 using System.Security.Claims;
 using BillingRD.Api.Security;
 using BillingRD.Domain.Identity;
@@ -32,8 +33,11 @@ public static class AuthEndpoints
         CancellationToken cancellationToken)
     {
         var email = request.Email?.Trim().ToLowerInvariant();
+        var validEmail = email is not null &&
+            MailAddress.TryCreate(email, out var parsedEmail) &&
+            string.Equals(parsedEmail.Address, email, StringComparison.OrdinalIgnoreCase);
 
-        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(request.Password) || request.Password.Length < 8)
+        if (!validEmail || string.IsNullOrWhiteSpace(request.Password) || request.Password.Length < 8)
         {
             return Results.ValidationProblem(new Dictionary<string, string[]>
             {
@@ -46,13 +50,21 @@ public static class AuthEndpoints
             return Results.Conflict(new { message = "An account with this email already exists." });
         }
 
-        var passwordHash = passwordHasher.HashPassword(email, request.Password);
-        var user = UserAccount.Create(email, passwordHash);
+        var passwordHash = passwordHasher.HashPassword(email!, request.Password);
+        var user = UserAccount.Create(email!, passwordHash);
 
         dbContext.Users.Add(user);
-        await dbContext.SaveChangesAsync(cancellationToken);
-        await AuthenticationSession.SignInAsync(httpContext, user);
 
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            return Results.Conflict(new { message = "An account with this email already exists." });
+        }
+
+        await AuthenticationSession.SignInAsync(httpContext, user);
         return Results.Created("/api/auth/me", new { user.Id, user.Email });
     }
 
@@ -87,7 +99,11 @@ public static class AuthEndpoints
         var memberships = await dbContext.BusinessMemberships
             .IgnoreQueryFilters()
             .Where(membership => membership.UserId == user.Id)
-            .Select(membership => membership.BusinessId)
+            .Join(
+                dbContext.Businesses.Where(business => business.IsActive),
+                membership => membership.BusinessId,
+                business => business.Id,
+                (membership, _) => membership.BusinessId)
             .Take(2)
             .ToListAsync(cancellationToken);
 
@@ -129,9 +145,11 @@ public static class AuthEndpoints
             candidate => candidate.Id == request.BusinessId && candidate.IsActive,
             cancellationToken);
 
-        var user = await dbContext.Users.SingleAsync(candidate => candidate.Id == userId, cancellationToken);
+        var user = await dbContext.Users.SingleOrDefaultAsync(
+            candidate => candidate.Id == userId && candidate.IsActive,
+            cancellationToken);
 
-        if (business is null)
+        if (business is null || user is null)
         {
             return Results.Forbid();
         }
