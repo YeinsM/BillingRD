@@ -6,7 +6,6 @@ using BillingRD.Infrastructure;
 using BillingRD.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -42,12 +41,19 @@ builder.Services.AddSingleton<IPasswordHasher<string>, PasswordHasher<string>>()
 
 builder.Services.AddRateLimiter(rateLimiterOptions =>
 {
-    rateLimiterOptions.AddFixedWindowLimiter("auth", windowOptions =>
+    rateLimiterOptions.AddPolicy("auth", httpContext =>
     {
-        windowOptions.PermitLimit = 10;
-        windowOptions.Window = TimeSpan.FromMinutes(1);
-        windowOptions.QueueLimit = 0;
-        windowOptions.AutoReplenishment = true;
+        var partitionKey = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey,
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            });
     });
 });
 
