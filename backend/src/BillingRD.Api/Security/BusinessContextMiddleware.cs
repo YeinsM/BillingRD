@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 namespace BillingRD.Api.Security;
 
 /// <summary>
-/// Resolves the active business only after confirming the authenticated user still owns a membership.
+/// Resolves the active business only after confirming the authenticated user, business and membership are still valid.
 /// </summary>
 public sealed class BusinessContextMiddleware(RequestDelegate next)
 {
@@ -18,18 +18,22 @@ public sealed class BusinessContextMiddleware(RequestDelegate next)
             Guid.TryParse(httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId) &&
             Guid.TryParse(httpContext.User.FindFirstValue(AuthClaims.BusinessId), out var businessId))
         {
-            var membershipExists = await dbContext.BusinessMemberships
+            var canAccessBusiness = await dbContext.BusinessMemberships
                 .IgnoreQueryFilters()
-                .AnyAsync(
-                    membership => membership.UserId == userId && membership.BusinessId == businessId,
-                    httpContext.RequestAborted);
+                .Where(membership => membership.UserId == userId && membership.BusinessId == businessId)
+                .Join(
+                    dbContext.Users.Where(user => user.IsActive),
+                    membership => membership.UserId,
+                    user => user.Id,
+                    (membership, _) => membership)
+                .Join(
+                    dbContext.Businesses.Where(business => business.IsActive),
+                    membership => membership.BusinessId,
+                    business => business.Id,
+                    (membership, _) => membership)
+                .AnyAsync(httpContext.RequestAborted);
 
-            var businessIsActive = membershipExists &&
-                await dbContext.Businesses.AnyAsync(
-                    business => business.Id == businessId && business.IsActive,
-                    httpContext.RequestAborted);
-
-            if (businessIsActive)
+            if (canAccessBusiness)
             {
                 currentBusiness.Resolve(businessId);
             }
