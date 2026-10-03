@@ -1,3 +1,4 @@
+using System.Threading.RateLimiting;
 using BillingRD.Api.Endpoints;
 using BillingRD.Api.Security;
 using BillingRD.Application.Abstractions;
@@ -5,6 +6,7 @@ using BillingRD.Infrastructure;
 using BillingRD.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -38,6 +40,17 @@ builder.Services
 builder.Services.AddAuthorization();
 builder.Services.AddSingleton<IPasswordHasher<string>, PasswordHasher<string>>();
 
+builder.Services.AddRateLimiter(rateLimiterOptions =>
+{
+    rateLimiterOptions.AddFixedWindowLimiter("auth", windowOptions =>
+    {
+        windowOptions.PermitLimit = 10;
+        windowOptions.Window = TimeSpan.FromMinutes(1);
+        windowOptions.QueueLimit = 0;
+        windowOptions.AutoReplenishment = true;
+    });
+});
+
 builder.Services.AddScoped<CurrentBusinessContext>();
 builder.Services.AddScoped<ICurrentBusinessContext>(services =>
     services.GetRequiredService<CurrentBusinessContext>());
@@ -50,6 +63,7 @@ builder.Services.AddInfrastructure(connectionString);
 var app = builder.Build();
 
 app.UseExceptionHandler();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseMiddleware<BusinessContextMiddleware>();
 app.UseAuthorization();
