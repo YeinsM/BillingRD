@@ -16,6 +16,25 @@ jobs:
   backend:
     name: Backend (.NET 10)
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18.6-alpine
+        env:
+          POSTGRES_DB: billingrd_test
+          POSTGRES_USER: billingrd
+          POSTGRES_PASSWORD: billingrd_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U billingrd -d billingrd_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      BILLINGRD_TEST_DB: Host=localhost;Port=5432;Database=billingrd_test;Username=billingrd;Password=billingrd_test
+
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -25,11 +44,17 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Restore
+      - name: Restore API
         run: dotnet restore backend/src/BillingRD.Api/BillingRD.Api.csproj
 
-      - name: Build
+      - name: Restore integration tests
+        run: dotnet restore tests/BillingRD.Infrastructure.IntegrationTests/BillingRD.Infrastructure.IntegrationTests.csproj
+
+      - name: Build API
         run: dotnet build backend/src/BillingRD.Api/BillingRD.Api.csproj --configuration Release --no-restore
+
+      - name: Run PostgreSQL integration tests
+        run: dotnet test tests/BillingRD.Infrastructure.IntegrationTests/BillingRD.Infrastructure.IntegrationTests.csproj --configuration Release --no-restore
 
   frontend:
     name: Frontend (Angular 22)
