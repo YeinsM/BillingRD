@@ -1,12 +1,12 @@
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace BillingRD.Infrastructure.Persistence.Migrations;
 
-/// <summary>
-/// Creates the first multi-business foundation tables.
-/// </summary>
+[DbContext(typeof(BillingDbContext))]
+[Migration("20261003135000_InitialBusinessFoundation")]
 public partial class InitialBusinessFoundation : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
