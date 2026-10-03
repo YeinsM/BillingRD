@@ -64,22 +64,25 @@ public static class ProductEndpoints
             });
         }
 
-        var product = Product.Create(
-            currentBusiness.BusinessId.Value,
-            request.Name,
-            request.Sku,
-            request.SalePrice);
+        var normalizedSku = request.Sku.Trim();
 
-        dbContext.Products.Add(product);
+        var skuExists = await dbContext.Products.AnyAsync(
+            product => product.Sku == normalizedSku,
+            cancellationToken);
 
-        try
-        {
-            await dbContext.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateException)
+        if (skuExists)
         {
             return Results.Conflict(new { message = "The SKU already exists in the active business." });
         }
+
+        var product = Product.Create(
+            currentBusiness.BusinessId.Value,
+            request.Name,
+            normalizedSku,
+            request.SalePrice);
+
+        dbContext.Products.Add(product);
+        await dbContext.SaveChangesAsync(cancellationToken);
 
         return Results.Created($"/api/products/{product.Id}", new
         {
