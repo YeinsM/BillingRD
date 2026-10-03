@@ -24,3 +24,22 @@ a artefactos/estados fiscales. Reglas concretas requieren fuente oficial vigente
 ## ADR-005 — Offline preparado, no prematuro — 2026-10-03
 Estado: adoptado.
 Diseñar IDs/idempotencia compatibles con sync; implementar offline completo desde un flujo real acordado.
+
+## ADR-006 — Modelo multiempresa inicial — 2026-10-03
+Estado: adoptado.
+Business es la frontera principal de propiedad de datos. Branch pertenece a Business.
+Product y Customer pertenecen inicialmente a Business; el inventario por sucursal se modelará al implementar stock.
+Los recursos business-scoped se filtran usando un contexto de negocio confiable resuelto por autenticación/autorización.
+Sin contexto confiable, las consultas deben fallar cerradas.
+
+## ADR-007 — Autorización por membresía — 2026-10-03
+Estado: parcialmente adoptado.
+Un UserAccount puede pertenecer a uno o más negocios mediante BusinessMembership y un BusinessRole.
+Roles iniciales: Owner, Administrator, Cashier, InventoryManager.
+El proveedor/mecanismo de autenticación (cookies/OIDC/etc.) sigue pendiente y no se simula con BusinessId del cliente.
+
+## ADR-008 — EF Core + Npgsql — 2026-10-03
+Estado: adoptado.
+Persistencia relacional con EF Core 10 y Npgsql sobre PostgreSQL.
+Motivo: migrations, transacciones, constraints, query filters, integración .NET 10 y bajo costo de mantenimiento.
+No se añade repositorio genérico por encima de EF Core; se crearán abstracciones solo cuando un caso de uso lo justifique.
