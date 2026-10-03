@@ -16,7 +16,7 @@ internal sealed class BusinessConfiguration : IEntityTypeConfiguration<Business>
         builder.Property(x => x.Name).HasMaxLength(160).IsRequired();
         builder.Property(x => x.LegalName).HasMaxLength(200);
         builder.Property(x => x.TaxId).HasMaxLength(20);
-        builder.HasIndex(x => x.TaxId).IsUnique().HasFilter(""TaxId" IS NOT NULL");
+        builder.HasIndex(x => x.TaxId).IsUnique().HasFilter("\\"TaxId\\" IS NOT NULL");
     }
 }
 
@@ -68,7 +68,7 @@ internal sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(x => x.Barcode).HasMaxLength(80);
         builder.Property(x => x.SalePrice).HasPrecision(18, 2);
         builder.HasIndex(x => new { x.BusinessId, x.Sku }).IsUnique();
-        builder.HasIndex(x => new { x.BusinessId, x.Barcode }).IsUnique().HasFilter(""Barcode" IS NOT NULL");
+        builder.HasIndex(x => new { x.BusinessId, x.Barcode }).IsUnique().HasFilter("\\"Barcode\\" IS NOT NULL");
         builder.HasOne<Business>().WithMany().HasForeignKey(x => x.BusinessId).OnDelete(DeleteBehavior.Restrict);
     }
 }
@@ -83,7 +83,7 @@ internal sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         builder.Property(x => x.TaxId).HasMaxLength(20);
         builder.Property(x => x.Email).HasMaxLength(320);
         builder.Property(x => x.Phone).HasMaxLength(40);
-        builder.HasIndex(x => new { x.BusinessId, x.TaxId }).IsUnique().HasFilter(""TaxId" IS NOT NULL");
+        builder.HasIndex(x => new { x.BusinessId, x.TaxId }).IsUnique().HasFilter("\\"TaxId\\" IS NOT NULL");
         builder.HasOne<Business>().WithMany().HasForeignKey(x => x.BusinessId).OnDelete(DeleteBehavior.Restrict);
     }
 }
