@@ -166,6 +166,75 @@ public sealed class InventoryFlowTests
         Assert.Equal(0, await db.StockMovements.IgnoreQueryFilters().CountAsync());
     }
 
+
+    [Fact]
+    public async Task Concurrent_sales_cannot_both_consume_the_last_unit()
+    {
+        var connectionString = Environment.GetEnvironmentVariable("BILLINGRD_TEST_DB")
+            ?? throw new InvalidOperationException("BILLINGRD_TEST_DB is required for integration tests.");
+
+        await using var factory = new WebApplicationFactory<Program>()
+            .WithWebHostBuilder(builder =>
+            {
+                builder.UseSetting("ConnectionStrings:BillingDatabase", connectionString);
+                builder.UseEnvironment("Testing");
+            });
+
+        await ResetDatabaseAsync(factory);
+
+        var client = factory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = true });
+
+        await client.PostAsJsonAsync("/api/auth/register", new
+        {
+            email = "concurrent-stock@example.test",
+            password = "StrongPass123!"
+        });
+
+        var businessResponse = await client.PostAsJsonAsync("/api/businesses/", new { name = "Stock Concurrente" });
+        var branchId = (await businessResponse.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("branchId")
+            .GetGuid();
+
+        var productResponse = await client.PostAsJsonAsync("/api/products/", new
+        {
+            name = "Última unidad",
+            sku = "LAST-001",
+            salePrice = 100m,
+            itbisCategory = "Standard",
+            tracksInventory = true
+        });
+        var productId = (await productResponse.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id")
+            .GetGuid();
+
+        Assert.Equal(
+            HttpStatusCode.OK,
+            (await client.PostAsJsonAsync("/api/inventory/adjustments", new
+            {
+                branchId,
+                productId,
+                quantityDelta = 1m,
+                reason = "Última unidad"
+            })).StatusCode);
+
+        var firstTask = SendSaleAsync(client, "concurrent-001", branchId, productId, 1m, 118m);
+        var secondTask = SendSaleAsync(client, "concurrent-002", branchId, productId, 1m, 118m);
+
+        var responses = await Task.WhenAll(firstTask, secondTask);
+        Assert.Single(responses.Where(response => response.StatusCode == HttpStatusCode.Created));
+        Assert.Single(responses.Where(response => response.StatusCode == HttpStatusCode.Conflict));
+
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
+
+        Assert.Equal(1, await db.Sales.IgnoreQueryFilters().CountAsync());
+        Assert.Equal(0m, await db.StockBalances.IgnoreQueryFilters().Select(x => x.Quantity).SingleAsync());
+        Assert.Equal(
+            1,
+            await db.StockMovements.IgnoreQueryFilters()
+                .CountAsync(movement => movement.SaleId != null));
+    }
+
     private static async Task<HttpResponseMessage> SendSaleAsync(
         HttpClient client,
         string idempotencyKey,
