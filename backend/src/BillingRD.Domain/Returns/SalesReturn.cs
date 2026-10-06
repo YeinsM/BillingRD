@@ -75,7 +75,7 @@ public sealed class SalesReturn
         string sku,
         decimal quantity,
         decimal unitPrice,
-        Billing.ItbisCategory itbisCategory,
+        ItbisCategory itbisCategory,
         decimal taxRate,
         decimal subtotal,
         decimal taxAmount,
