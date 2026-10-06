@@ -38,6 +38,7 @@ public static class ProductEndpoints
                 product.Barcode,
                 product.SalePrice,
                 product.ItbisCategory,
+                product.TracksInventory,
                 product.IsActive
             })
             .ToListAsync(cancellationToken);
@@ -83,7 +84,8 @@ public static class ProductEndpoints
             request.Name,
             normalizedSku,
             request.SalePrice,
-            request.ItbisCategory);
+            request.ItbisCategory,
+            request.TracksInventory);
 
         dbContext.Products.Add(product);
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -94,7 +96,8 @@ public static class ProductEndpoints
             product.Name,
             product.Sku,
             product.SalePrice,
-            product.ItbisCategory
+            product.ItbisCategory,
+            product.TracksInventory
         });
     }
 
@@ -102,5 +105,6 @@ public static class ProductEndpoints
         string? Name,
         string? Sku,
         decimal SalePrice,
-        ItbisCategory ItbisCategory = ItbisCategory.Standard);
+        ItbisCategory ItbisCategory = ItbisCategory.Standard,
+        bool TracksInventory = true);
 }
