@@ -14,6 +14,7 @@
 - ITBIS MVP: Exempt (exento), ZeroRated (0%), Reduced (16%) y Standard (18%); SalePrice inicialmente antes de impuesto.
 - Las ventas guardan snapshots monetarios/fiscales por línea y requieren idempotencia.
 - Inventario: stock por sucursal con balances + movimientos auditables; stock negativo deshabilitado en el MVP.
+- Caja: múltiples CashRegister por sucursal, una sesión abierta por caja, movimientos auditables y conciliación esperado/contado.
 - e-CF/DGII será un módulo aislado de la factura interna.
 - Desktop debe poder evolucionar a offline con sincronización segura.
 

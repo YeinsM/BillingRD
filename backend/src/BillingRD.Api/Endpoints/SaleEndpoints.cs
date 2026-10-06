@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using BillingRD.Api.Security;
 using BillingRD.Domain.Billing;
+using BillingRD.Domain.Cash;
 using BillingRD.Domain.Identity;
 using BillingRD.Domain.Inventory;
 using BillingRD.Domain.Payments;
@@ -187,6 +188,52 @@ public static class SaleEndpoints
 
         await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
         var stockMovements = new List<StockMovement>();
+        var cashMovements = new List<CashMovement>();
+
+        var cashPayments = payments.Where(payment => payment.Method == PaymentMethod.Cash).ToList();
+        CashSession? cashSession = null;
+
+        if (cashPayments.Count > 0)
+        {
+            if (!request.CashSessionId.HasValue)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["cashSessionId"] = ["An open cash session is required when the sale contains cash payments."]
+                });
+            }
+
+            cashSession = await dbContext.CashSessions
+                .FromSqlInterpolated($@"SELECT * FROM cash_sessions WHERE ""Id"" = {request.CashSessionId.Value} FOR UPDATE")
+                .SingleOrDefaultAsync(cancellationToken);
+
+            if (cashSession is null || cashSession.ClosedAtUtc is not null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return Results.Conflict(new { message = "The selected cash session is not open." });
+            }
+
+            var cashRegister = await dbContext.CashRegisters
+                .SingleAsync(register => register.Id == cashSession.CashRegisterId, cancellationToken);
+
+            if (!cashRegister.IsActive || cashRegister.BranchId != request.BranchId)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return Results.Conflict(new { message = "The cash session does not belong to an active register in the sale branch." });
+            }
+
+            foreach (var cashPayment in cashPayments)
+            {
+                cashMovements.Add(CashMovement.FromSale(
+                    currentBusiness.BusinessId.Value,
+                    cashSession.Id,
+                    userId,
+                    sale.Id,
+                    cashPayment.Id,
+                    cashPayment.Amount));
+            }
+        }
 
         // Always lock/update products in deterministic order to reduce deadlock risk between concurrent POS sales.
         foreach (var item in request.Items.OrderBy(item => item.ProductId))
@@ -239,6 +286,7 @@ public static class SaleEndpoints
         dbContext.Invoices.Add(invoice);
         dbContext.Payments.AddRange(payments);
         dbContext.StockMovements.AddRange(stockMovements);
+        dbContext.CashMovements.AddRange(cashMovements);
 
         try
         {
@@ -351,7 +399,8 @@ public static class SaleEndpoints
         Guid BranchId,
         Guid? CustomerId,
         List<SaleItemRequest>? Items,
-        List<SalePaymentRequest>? Payments);
+        List<SalePaymentRequest>? Payments,
+        Guid? CashSessionId = null);
 
     public sealed record SaleItemRequest(Guid ProductId, decimal Quantity);
     public sealed record SalePaymentRequest(PaymentMethod Method, decimal Amount, string? Reference);

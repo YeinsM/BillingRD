@@ -23,6 +23,9 @@ Estados: definido, en curso, pendiente de decisión, implementado, verificado, p
 | MVP-01 | Negocio → producto → cliente → venta → factura → pago | verificado | PR #5 + CI #37466043222 |
 | STOCK-01 | StockBalance por sucursal + movimientos auditables | verificado | PR #6 + CI #37467802708 |
 | STOCK-02 | Venta descuenta stock atómicamente y rechaza sobreventa | verificado | última unidad concurrente + CI #37467802708 |
+| CASH-01 | CashRegister + CashSession + apertura/cierre | verificado | PR #7 + CI #37476745272 |
+| CASH-02 | Venta Cash genera CashMovement idempotente | verificado | mixed payment + retry tests |
+| CASH-03 | Conciliación Expected/Counted/Difference | verificado | cierre con diferencia + CI #37476745272 |
 | DGII-01 | Integración fiscal desde fuente oficial vigente | definido | sin implementación |
 | OFF-01 | Preparación arquitectónica para offline | definido | ADR-005 |
 
@@ -31,9 +34,11 @@ Primer vertical slice comercial completo y verificado: negocio → producto → 
 
 Inventario por sucursal verificado.
 
+Caja / cash register verificada.
+
 Siguiente slice recomendado:
-1. caja: apertura, movimientos, cobros y cierre;
-2. devoluciones con reversión de inventario/pago;
+1. devoluciones con reversión de inventario/pago;
+2. notas internas;
 3. preparación formal de ElectronicInvoicing/e-CF.
 
 Decisiones ya resueltas:

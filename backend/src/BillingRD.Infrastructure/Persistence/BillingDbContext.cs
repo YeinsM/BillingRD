@@ -2,6 +2,7 @@ using BillingRD.Application.Abstractions;
 using BillingRD.Domain.Billing;
 using BillingRD.Domain.Businesses;
 using BillingRD.Domain.Catalog;
+using BillingRD.Domain.Cash;
 using BillingRD.Domain.Customers;
 using BillingRD.Domain.Identity;
 using BillingRD.Domain.Inventory;
@@ -29,6 +30,9 @@ public sealed class BillingDbContext(
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<StockBalance> StockBalances => Set<StockBalance>();
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
+    public DbSet<CashRegister> CashRegisters => Set<CashRegister>();
+    public DbSet<CashSession> CashSessions => Set<CashSession>();
+    public DbSet<CashMovement> CashMovements => Set<CashMovement>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -44,5 +48,8 @@ public sealed class BillingDbContext(
         modelBuilder.Entity<Payment>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
         modelBuilder.Entity<StockBalance>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
         modelBuilder.Entity<StockMovement>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
+        modelBuilder.Entity<CashRegister>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
+        modelBuilder.Entity<CashSession>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
+        modelBuilder.Entity<CashMovement>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
     }
 }
