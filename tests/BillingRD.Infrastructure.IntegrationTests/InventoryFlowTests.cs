@@ -250,7 +250,7 @@ public sealed class InventoryFlowTests
             branchId,
             customerId = (Guid?)null,
             items = new[] { new { productId, quantity } },
-            payments = new[] { new { method = "Cash", amount = paymentAmount, reference = (string?)null } }
+            payments = new[] { new { method = "Card", amount = paymentAmount, reference = "INV-TEST" } }
         });
 
         return await client.SendAsync(request);
