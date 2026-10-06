@@ -231,47 +231,6 @@ public static class ReturnEndpoints
         foreach (var refundRequest in request.Refunds)
             salesReturn.AddRefund(refundRequest.Method, refundRequest.Amount, refundRequest.Reference);
 
-        var products = await dbContext.Products
-            .Where(x => request.Items.Select(item => item.ProductId).Contains(x.Id))
-            .ToDictionaryAsync(x => x.Id, cancellationToken);
-
-        var stockMovements = new List<StockMovement>();
-        foreach (var line in salesReturn.Lines.OrderBy(x => x.ProductId))
-        {
-            if (!products[line.ProductId].TracksInventory)
-                continue;
-
-            var now = DateTimeOffset.UtcNow;
-            var affected = await dbContext.StockBalances
-                .Where(x => x.BranchId == sale.BranchId && x.ProductId == line.ProductId)
-                .ExecuteUpdateAsync(
-                    setters => setters
-                        .SetProperty(x => x.Quantity, x => x.Quantity + line.Quantity)
-                        .SetProperty(x => x.UpdatedAtUtc, now),
-                    cancellationToken);
-
-            if (affected != 1)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                return Results.Conflict(new { message = "Inventory balance for a returned product is unavailable." });
-            }
-
-            var balanceAfter = await dbContext.StockBalances
-                .Where(x => x.BranchId == sale.BranchId && x.ProductId == line.ProductId)
-                .Select(x => x.Quantity)
-                .SingleAsync(cancellationToken);
-
-            stockMovements.Add(StockMovement.CreateReturn(
-                currentBusiness.BusinessId.Value,
-                sale.BranchId,
-                line.ProductId,
-                userId,
-                sale.Id,
-                salesReturn.Id,
-                line.Quantity,
-                balanceAfter));
-        }
-
         var cashRefunds = salesReturn.Refunds.Where(x => x.Method == PaymentMethod.Cash).ToList();
         var cashMovements = new List<CashMovement>();
 
@@ -328,6 +287,48 @@ public static class ReturnEndpoints
                     refund.Id,
                     refund.Amount));
             }
+        }
+
+
+        var products = await dbContext.Products
+            .Where(x => request.Items.Select(item => item.ProductId).Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id, cancellationToken);
+
+        var stockMovements = new List<StockMovement>();
+        foreach (var line in salesReturn.Lines.OrderBy(x => x.ProductId))
+        {
+            if (!products[line.ProductId].TracksInventory)
+                continue;
+
+            var now = DateTimeOffset.UtcNow;
+            var affected = await dbContext.StockBalances
+                .Where(x => x.BranchId == sale.BranchId && x.ProductId == line.ProductId)
+                .ExecuteUpdateAsync(
+                    setters => setters
+                        .SetProperty(x => x.Quantity, x => x.Quantity + line.Quantity)
+                        .SetProperty(x => x.UpdatedAtUtc, now),
+                    cancellationToken);
+
+            if (affected != 1)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return Results.Conflict(new { message = "Inventory balance for a returned product is unavailable." });
+            }
+
+            var balanceAfter = await dbContext.StockBalances
+                .Where(x => x.BranchId == sale.BranchId && x.ProductId == line.ProductId)
+                .Select(x => x.Quantity)
+                .SingleAsync(cancellationToken);
+
+            stockMovements.Add(StockMovement.CreateReturn(
+                currentBusiness.BusinessId.Value,
+                sale.BranchId,
+                line.ProductId,
+                userId,
+                sale.Id,
+                salesReturn.Id,
+                line.Quantity,
+                balanceAfter));
         }
 
         dbContext.Returns.Add(salesReturn);
