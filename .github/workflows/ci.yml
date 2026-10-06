@@ -53,29 +53,6 @@ jobs:
       - name: Build API
         run: dotnet build backend/src/BillingRD.Api/BillingRD.Api.csproj --configuration Release --no-restore
 
-      - name: Diagnose EF pending model
-        shell: bash
-        run: |
-          cd backend
-          dotnet tool restore
-          dotnet ef migrations add DiagnosticModelDiff             --project src/BillingRD.Infrastructure/BillingRD.Infrastructure.csproj             --startup-project src/BillingRD.Infrastructure/BillingRD.Infrastructure.csproj             --context BillingDbContext             --output-dir Persistence/Migrations/Diagnostic
-          echo "===== SNAPSHOT DIFF ====="
-          git diff -- src/BillingRD.Infrastructure/Persistence/Migrations/BillingDbContextModelSnapshot.cs || true
-          echo "===== GENERATED DIAGNOSTIC MIGRATION ====="
-          find src/BillingRD.Infrastructure/Persistence/Migrations/Diagnostic -maxdepth 1 -type f -print
-
-      - name: Upload EF diagnostic model
-        uses: actions/upload-artifact@v6
-        with:
-          name: ef-diagnostic-model
-          path: |
-            backend/src/BillingRD.Infrastructure/Persistence/Migrations/BillingDbContextModelSnapshot.cs
-            backend/src/BillingRD.Infrastructure/Persistence/Migrations/Diagnostic/
-          if-no-files-found: error
-
-      - name: Fail after EF diagnostic
-        run: exit 1
-
       - name: Run PostgreSQL integration tests
         run: dotnet test tests/BillingRD.Infrastructure.IntegrationTests/BillingRD.Infrastructure.IntegrationTests.csproj --configuration Release --no-restore
 
