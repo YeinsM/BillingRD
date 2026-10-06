@@ -58,7 +58,7 @@ jobs:
         run: |
           cd backend
           dotnet tool restore
-          dotnet ef migrations add DiagnosticModelDiff             --project src/BillingRD.Infrastructure/BillingRD.Infrastructure.csproj             --startup-project src/BillingRD.Api/BillingRD.Api.csproj             --context BillingDbContext             --output-dir Persistence/Migrations/Diagnostic
+          dotnet ef migrations add DiagnosticModelDiff             --project src/BillingRD.Infrastructure/BillingRD.Infrastructure.csproj             --startup-project src/BillingRD.Infrastructure/BillingRD.Infrastructure.csproj             --context BillingDbContext             --output-dir Persistence/Migrations/Diagnostic
           echo "===== SNAPSHOT DIFF ====="
           git diff -- src/BillingRD.Infrastructure/Persistence/Migrations/BillingDbContextModelSnapshot.cs || true
           echo "===== GENERATED DIAGNOSTIC MIGRATION ====="
