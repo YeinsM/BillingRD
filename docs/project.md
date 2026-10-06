@@ -11,7 +11,7 @@
 - Multiempresa: Business es frontera inicial; Branch pertenece a Business.
 - Autorización de negocio: membresías y roles; autenticación MVP con cookie HttpOnly same-site.
 - Núcleo: productos, clientes, ventas, facturas/comprobantes, pagos, caja e inventario.
-- ITBIS MVP: exento 0%, reducido 16% y estándar 18%; SalePrice inicialmente antes de impuesto.
+- ITBIS MVP: Exempt (exento), ZeroRated (0%), Reduced (16%) y Standard (18%); SalePrice inicialmente antes de impuesto.
 - Las ventas guardan snapshots monetarios/fiscales por línea y requieren idempotencia.
 - e-CF/DGII será un módulo aislado de la factura interna.
 - Desktop debe poder evolucionar a offline con sincronización segura.
