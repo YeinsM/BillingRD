@@ -95,6 +95,7 @@ app.MapBusinessEndpoints();
 app.MapProductEndpoints();
 app.MapCustomerEndpoints();
 app.MapSaleEndpoints();
+app.MapInventoryEndpoints();
 
 app.Run();
 

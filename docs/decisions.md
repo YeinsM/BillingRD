@@ -81,3 +81,20 @@ POST /api/sales requiere Idempotency-Key. La clave es única por Business para e
 Owner, Administrator y Cashier pueden vender; InventoryManager no puede confirmar ventas.
 
 La Invoice creada en esta fase es interna y no es NCF/e-CF. La emisión fiscal continúa aislada en ElectronicInvoicing.
+
+
+## ADR-012 — Inventario por sucursal sin stock negativo — 2026-10-06
+Estado: adoptado.
+Los productos pueden indicar TracksInventory. Para productos controlados, el stock es específico por Branch.
+StockBalance mantiene la cantidad operativa actual y StockMovement conserva el historial auditable de entradas/salidas.
+
+El MVP no permite stock negativo. Una venta de producto inventariable solo se confirma si existe saldo suficiente en
+la sucursal seleccionada. El descuento usa actualización condicional en PostgreSQL dentro de la misma transacción que
+Sale + SaleLine + Invoice + Payment, para evitar sobreventa concurrente.
+
+Los ajustes manuales requieren motivo y solo Owner, Administrator o InventoryManager pueden ejecutarlos.
+Sale genera movimientos tipo Sale automáticamente. Un producto con TracksInventory=false puede venderse sin balance.
+
+Motivo: una tienda necesita consistencia operativa inmediata y trazabilidad. Permitir stock negativo por defecto
+ocultaría errores de recepción/conteo y complicaría la reconciliación. Si se requiere venta con stock negativo en el
+futuro deberá ser una política explícita por negocio/sucursal con ADR y pruebas de concurrencia propias.

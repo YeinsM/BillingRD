@@ -2,6 +2,7 @@ using System.Security.Claims;
 using BillingRD.Api.Security;
 using BillingRD.Domain.Billing;
 using BillingRD.Domain.Identity;
+using BillingRD.Domain.Inventory;
 using BillingRD.Domain.Payments;
 using BillingRD.Domain.Sales;
 using BillingRD.Infrastructure.Persistence;
@@ -184,16 +185,69 @@ public static class SaleEndpoints
             sale.TaxAmount,
             sale.Total);
 
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        var stockMovements = new List<StockMovement>();
+
+        // Always lock/update products in deterministic order to reduce deadlock risk between concurrent POS sales.
+        foreach (var item in request.Items.OrderBy(item => item.ProductId))
+        {
+            var product = products[item.ProductId];
+
+            if (!product.TracksInventory)
+            {
+                continue;
+            }
+
+            var now = DateTimeOffset.UtcNow;
+            var affected = await dbContext.StockBalances
+                .Where(balance =>
+                    balance.BranchId == request.BranchId &&
+                    balance.ProductId == product.Id &&
+                    balance.Quantity >= item.Quantity)
+                .ExecuteUpdateAsync(
+                    setters => setters
+                        .SetProperty(balance => balance.Quantity, balance => balance.Quantity - item.Quantity)
+                        .SetProperty(balance => balance.UpdatedAtUtc, now),
+                    cancellationToken);
+
+            if (affected != 1)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return Results.Conflict(new
+                {
+                    message = "Insufficient stock for one or more products.",
+                    productId = product.Id
+                });
+            }
+
+            var balanceAfter = await dbContext.StockBalances
+                .Where(balance => balance.BranchId == request.BranchId && balance.ProductId == product.Id)
+                .Select(balance => balance.Quantity)
+                .SingleAsync(cancellationToken);
+
+            stockMovements.Add(StockMovement.CreateSale(
+                currentBusiness.BusinessId.Value,
+                request.BranchId,
+                product.Id,
+                userId,
+                sale.Id,
+                item.Quantity,
+                balanceAfter));
+        }
+
         dbContext.Sales.Add(sale);
         dbContext.Invoices.Add(invoice);
         dbContext.Payments.AddRange(payments);
+        dbContext.StockMovements.AddRange(stockMovements);
 
         try
         {
             await dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
         }
         catch (DbUpdateException)
         {
+            await transaction.RollbackAsync(cancellationToken);
             dbContext.ChangeTracker.Clear();
 
             var concurrentSale = await dbContext.Sales

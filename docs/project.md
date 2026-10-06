@@ -13,6 +13,7 @@
 - Núcleo: productos, clientes, ventas, facturas/comprobantes, pagos, caja e inventario.
 - ITBIS MVP: Exempt (exento), ZeroRated (0%), Reduced (16%) y Standard (18%); SalePrice inicialmente antes de impuesto.
 - Las ventas guardan snapshots monetarios/fiscales por línea y requieren idempotencia.
+- Inventario: stock por sucursal con balances + movimientos auditables; stock negativo deshabilitado en el MVP.
 - e-CF/DGII será un módulo aislado de la factura interna.
 - Desktop debe poder evolucionar a offline con sincronización segura.
 
@@ -29,7 +30,6 @@
 | ID | Decisión | Afecta |
 |---|---|---|
 | D01 | Nombre comercial definitivo | branding |
-| D05 | Política de stock negativo | inventario |
 | D07 | Alcance fiscal MVP y comprobantes priorizados | DGII |
 | D08 | DB local desktop y primer flujo offline | sync |
 | D09 | Hardware POS objetivo | POS |
