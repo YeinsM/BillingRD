@@ -63,8 +63,8 @@ public sealed class SaleFlowTests
             },
             payments = new object[]
             {
-                new { method = "Cash", amount = 200m, reference = (string?)null },
-                new { method = "Card", amount = 109m, reference = "AUTH-001" }
+                new { method = "Card", amount = 200m, reference = "AUTH-001" },
+                new { method = "BankTransfer", amount = 109m, reference = "TRX-001" }
             }
         });
 
@@ -95,7 +95,7 @@ public sealed class SaleFlowTests
             branchId,
             customerId = (Guid?)null,
             items = new[] { new { productId = standardId, quantity = 99m } },
-            payments = new[] { new { method = "Cash", amount = 1m, reference = (string?)null } }
+            payments = new[] { new { method = "Card", amount = 1m, reference = "RETRY" } }
         });
 
         var retryResponse = await client.SendAsync(retry);
@@ -177,7 +177,7 @@ public sealed class SaleFlowTests
             branchId,
             customerId = (Guid?)null,
             items = new[] { new { productId, quantity = 1m } },
-            payments = new[] { new { method = "Cash", amount = paymentAmount, reference = (string?)null } }
+            payments = new[] { new { method = "Card", amount = paymentAmount, reference = "SALE-TEST" } }
         });
 
         return await client.SendAsync(request);
