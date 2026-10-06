@@ -58,7 +58,7 @@ correspondiente antes de considerar el flujo listo para producción.
 
 ## ADR-010 — Modelo de ITBIS y redondeo del MVP — 2026-10-06
 Estado: adoptado.
-BillingRD soporta inicialmente tres categorías de ITBIS por producto: Exempt (0%), Reduced (16%) y Standard (18%).
+BillingRD soporta inicialmente cuatro tratamientos fiscales por producto: Exempt (exento), ZeroRated (ITBIS 0%), Reduced (16%) y Standard (18%).
 La tasa se configura en Product, pero SaleLine guarda snapshot de categoría, tasa, precio, subtotal, impuesto y total.
 
 SalePrice se interpreta inicialmente como precio antes de ITBIS. El impuesto se calcula por línea:
@@ -67,7 +67,7 @@ TaxAmount = round(Subtotal × TaxRate / 100, 2)
 Total = Subtotal + TaxAmount
 El redondeo monetario usa 2 decimales con MidpointRounding.AwayFromZero.
 
-Motivo: DGII mantiene tasa general de 18%, tasa reducida de 16% para determinados productos y bienes/servicios exentos.
+Motivo: DGII mantiene tasa general de 18%, tasa reducida de 16% para determinados productos y distingue operaciones exentas de partidas gravadas a tasa 0% en el formato e-CF.
 El snapshot evita que cambios futuros de catálogo o tasas reescriban ventas históricas.
 Una futura opción de precios con impuestos incluidos requiere ADR y casos de prueba propios antes de implementarse.
 
