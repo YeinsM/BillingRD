@@ -53,6 +53,7 @@ internal sealed class SaleLineConfiguration : IEntityTypeConfiguration<SaleLine>
         builder.Property(x => x.TaxAmount).HasPrecision(18, 2);
         builder.Property(x => x.Total).HasPrecision(18, 2);
 
+        builder.HasOne<Business>().WithMany().HasForeignKey(x => x.BusinessId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Product>().WithMany().HasForeignKey(x => x.ProductId).OnDelete(DeleteBehavior.Restrict);
         builder.HasIndex(x => x.SaleId);
     }
