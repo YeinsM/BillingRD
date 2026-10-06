@@ -64,6 +64,7 @@ public partial class AddSalesInvoicesPayments : Migration
             constraints: table =>
             {
                 table.PrimaryKey("PK_sale_lines", x => x.Id);
+                table.ForeignKey("FK_sale_lines_businesses_BusinessId", x => x.BusinessId, "businesses", "Id", onDelete: ReferentialAction.Restrict);
                 table.ForeignKey("FK_sale_lines_products_ProductId", x => x.ProductId, "products", "Id", onDelete: ReferentialAction.Restrict);
                 table.ForeignKey("FK_sale_lines_sales_SaleId", x => x.SaleId, "sales", "Id", onDelete: ReferentialAction.Cascade);
             });
@@ -113,6 +114,7 @@ public partial class AddSalesInvoicesPayments : Migration
         migrationBuilder.CreateIndex("IX_sales_CreatedByUserId", "sales", "CreatedByUserId");
         migrationBuilder.CreateIndex("IX_sales_CustomerId", "sales", "CustomerId");
 
+        migrationBuilder.CreateIndex("IX_sale_lines_BusinessId", "sale_lines", "BusinessId");
         migrationBuilder.CreateIndex("IX_sale_lines_ProductId", "sale_lines", "ProductId");
         migrationBuilder.CreateIndex("IX_sale_lines_SaleId", "sale_lines", "SaleId");
 
