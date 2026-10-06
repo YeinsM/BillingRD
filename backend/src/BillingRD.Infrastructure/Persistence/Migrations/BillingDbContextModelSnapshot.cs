@@ -70,6 +70,7 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.Property<DateTimeOffset>("CreatedAtUtc").HasColumnType("timestamp with time zone");
             b.Property<bool>("IsActive").HasColumnType("boolean");
             b.Property<string>("ItbisCategory").IsRequired().HasMaxLength(16).HasColumnType("character varying(16)");
+            b.Property<bool>("TracksInventory").HasColumnType("boolean").HasDefaultValue(true);
             b.Property<string>("Name").IsRequired().HasMaxLength(200).HasColumnType("character varying(200)");
             b.Property<decimal>("SalePrice").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
             b.Property<string>("Sku").IsRequired().HasMaxLength(80).HasColumnType("character varying(80)");
@@ -117,6 +118,43 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.HasKey("Id");
             b.HasIndex("Email").IsUnique();
             b.ToTable("users");
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.Inventory.StockBalance", b =>
+        {
+            b.Property<Guid>("Id").ValueGeneratedNever().HasColumnType("uuid");
+            b.Property<Guid>("BranchId").HasColumnType("uuid");
+            b.Property<Guid>("BusinessId").HasColumnType("uuid");
+            b.Property<Guid>("ProductId").HasColumnType("uuid");
+            b.Property<decimal>("Quantity").HasPrecision(18, 3).HasColumnType("numeric(18,3)");
+            b.Property<DateTimeOffset>("UpdatedAtUtc").HasColumnType("timestamp with time zone");
+            b.HasKey("Id");
+            b.HasIndex("BranchId");
+            b.HasIndex("ProductId");
+            b.HasIndex("BusinessId", "BranchId", "ProductId").IsUnique();
+            b.ToTable("stock_balances");
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.Inventory.StockMovement", b =>
+        {
+            b.Property<Guid>("Id").ValueGeneratedNever().HasColumnType("uuid");
+            b.Property<decimal>("BalanceAfter").HasPrecision(18, 3).HasColumnType("numeric(18,3)");
+            b.Property<Guid>("BranchId").HasColumnType("uuid");
+            b.Property<Guid>("BusinessId").HasColumnType("uuid");
+            b.Property<DateTimeOffset>("CreatedAtUtc").HasColumnType("timestamp with time zone");
+            b.Property<Guid>("CreatedByUserId").HasColumnType("uuid");
+            b.Property<Guid>("ProductId").HasColumnType("uuid");
+            b.Property<decimal>("QuantityDelta").HasPrecision(18, 3).HasColumnType("numeric(18,3)");
+            b.Property<string>("Reason").HasMaxLength(240).HasColumnType("character varying(240)");
+            b.Property<Guid?>("SaleId").HasColumnType("uuid");
+            b.Property<string>("Type").IsRequired().HasMaxLength(24).HasColumnType("character varying(24)");
+            b.HasKey("Id");
+            b.HasIndex("BusinessId");
+            b.HasIndex("CreatedByUserId");
+            b.HasIndex("ProductId");
+            b.HasIndex("BranchId", "ProductId", "CreatedAtUtc");
+            b.HasIndex("SaleId", "ProductId").IsUnique().HasFilter(@"""SaleId"" IS NOT NULL");
+            b.ToTable("stock_movements");
         });
 
         modelBuilder.Entity("BillingRD.Domain.Payments.Payment", b =>
@@ -236,6 +274,59 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
                 .HasForeignKey("UserId")
                 .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.Inventory.StockBalance", b =>
+        {
+            b.HasOne("BillingRD.Domain.Businesses.Branch", null)
+                .WithMany()
+                .HasForeignKey("BranchId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Businesses.Business", null)
+                .WithMany()
+                .HasForeignKey("BusinessId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Catalog.Product", null)
+                .WithMany()
+                .HasForeignKey("ProductId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.Inventory.StockMovement", b =>
+        {
+            b.HasOne("BillingRD.Domain.Businesses.Branch", null)
+                .WithMany()
+                .HasForeignKey("BranchId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Businesses.Business", null)
+                .WithMany()
+                .HasForeignKey("BusinessId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Identity.UserAccount", null)
+                .WithMany()
+                .HasForeignKey("CreatedByUserId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Catalog.Product", null)
+                .WithMany()
+                .HasForeignKey("ProductId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Sales.Sale", null)
+                .WithMany()
+                .HasForeignKey("SaleId")
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity("BillingRD.Domain.Payments.Payment", b =>
