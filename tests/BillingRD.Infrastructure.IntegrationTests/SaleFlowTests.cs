@@ -46,6 +46,7 @@ public sealed class SaleFlowTests
         var standardId = await CreateProductAsync(client, "Producto 18", "STD-18", 100m, "Standard");
         var reducedId = await CreateProductAsync(client, "Producto 16", "RED-16", 100m, "Reduced");
         var exemptId = await CreateProductAsync(client, "Producto Exento", "EX-00", 50m, "Exempt");
+        var zeroRatedId = await CreateProductAsync(client, "Producto 0%", "ZR-00", 25m, "ZeroRated");
 
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/sales/");
         request.Headers.Add("Idempotency-Key", "sale-test-001");
@@ -57,12 +58,13 @@ public sealed class SaleFlowTests
             {
                 new { productId = standardId, quantity = 1m },
                 new { productId = reducedId, quantity = 1m },
-                new { productId = exemptId, quantity = 1m }
+                new { productId = exemptId, quantity = 1m },
+                new { productId = zeroRatedId, quantity = 1m }
             },
             payments = new object[]
             {
                 new { method = "Cash", amount = 200m, reference = (string?)null },
-                new { method = "Card", amount = 84m, reference = "AUTH-001" }
+                new { method = "Card", amount = 109m, reference = "AUTH-001" }
             }
         });
 
@@ -70,10 +72,17 @@ public sealed class SaleFlowTests
         Assert.Equal(HttpStatusCode.Created, saleResponse.StatusCode);
 
         var saleJson = await saleResponse.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal(250m, saleJson.GetProperty("subtotal").GetDecimal());
+        Assert.Equal(275m, saleJson.GetProperty("subtotal").GetDecimal());
         Assert.Equal(34m, saleJson.GetProperty("taxAmount").GetDecimal());
-        Assert.Equal(284m, saleJson.GetProperty("total").GetDecimal());
-        Assert.Equal(3, saleJson.GetProperty("lines").GetArrayLength());
+        Assert.Equal(309m, saleJson.GetProperty("total").GetDecimal());
+        Assert.Equal(4, saleJson.GetProperty("lines").GetArrayLength());
+
+        var categories = saleJson.GetProperty("lines")
+            .EnumerateArray()
+            .Select(line => line.GetProperty("itbisCategory").GetString())
+            .ToHashSet();
+        Assert.Contains("Exempt", categories);
+        Assert.Contains("ZeroRated", categories);
         Assert.Equal(2, saleJson.GetProperty("payments").GetArrayLength());
 
         var saleId = saleJson.GetProperty("id").GetGuid();
@@ -99,7 +108,7 @@ public sealed class SaleFlowTests
         var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
 
         Assert.Equal(1, await db.Sales.IgnoreQueryFilters().CountAsync());
-        Assert.Equal(3, await db.SaleLines.IgnoreQueryFilters().CountAsync());
+        Assert.Equal(4, await db.SaleLines.IgnoreQueryFilters().CountAsync());
         Assert.Equal(1, await db.Invoices.IgnoreQueryFilters().CountAsync());
         Assert.Equal(2, await db.Payments.IgnoreQueryFilters().CountAsync());
     }
