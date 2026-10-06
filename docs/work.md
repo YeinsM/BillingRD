@@ -26,9 +26,9 @@ Estados: definido, en curso, pendiente de decisión, implementado, verificado, p
 | CASH-01 | CashRegister + CashSession + apertura/cierre | verificado | PR #7 + CI #37476745272 |
 | CASH-02 | Venta Cash genera CashMovement idempotente | verificado | mixed payment + retry tests |
 | CASH-03 | Conciliación Expected/Counted/Difference | verificado | cierre con diferencia + CI #37476745272 |
-| RET-01 | Devolución parcial/total sin exceder cantidad vendida | en curso | PR #8 pendiente de CI verde |
-| RET-02 | Reposición de inventario + reembolso por método | en curso | PR #8 pendiente de CI verde |
-| RET-03 | Cash refund en sesión abierta + idempotencia | en curso | PR #8 pendiente de CI verde |
+| RET-01 | Devolución parcial/total sin exceder cantidad vendida | verificado | PR #8 + CI #37481370309 |
+| RET-02 | Reposición de inventario + reembolso por método | verificado | ReturnFlowTests + PostgreSQL |
+| RET-03 | Cash refund en sesión abierta + idempotencia | verificado | ReturnFlowTests + CI #37481370309 |
 | DGII-01 | Integración fiscal desde fuente oficial vigente | definido | sin implementación |
 | OFF-01 | Preparación arquitectónica para offline | definido | ADR-005 |
 
@@ -39,9 +39,9 @@ Inventario por sucursal verificado.
 
 Caja / cash register verificada.
 
-Slice actual: devoluciones y reembolsos.
+Devoluciones y reembolsos verificados.
 
-Siguiente slice recomendado una vez verificado:
+Siguiente slice recomendado:
 1. notas internas / motivo y estado comercial de ajustes;
 2. preparar formalmente ElectronicInvoicing/e-CF y notas de crédito;
 3. definir el primer flujo offline de desktop.
