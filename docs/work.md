@@ -21,17 +21,17 @@ Estados: definido, en curso, pendiente de decisión, implementado, verificado, p
 | INV-01 | Invoice interna 1:1 con Sale | verificado | PostgreSQL/HTTP integration tests |
 | PAY-01 | Pagos múltiples que cuadran exactamente con Sale.Total | verificado | PostgreSQL/HTTP integration tests |
 | MVP-01 | Negocio → producto → cliente → venta → factura → pago | verificado | PR #5 + CI #37466043222 |
-| STOCK-01 | StockBalance por sucursal + movimientos auditables | en curso | PR de inventario pendiente de CI |
-| STOCK-02 | Venta descuenta stock atómicamente y rechaza sobreventa | en curso | pruebas concurrentes pendientes de CI |
+| STOCK-01 | StockBalance por sucursal + movimientos auditables | verificado | PR #6 + CI #37467802708 |
+| STOCK-02 | Venta descuenta stock atómicamente y rechaza sobreventa | verificado | última unidad concurrente + CI #37467802708 |
 | DGII-01 | Integración fiscal desde fuente oficial vigente | definido | sin implementación |
 | OFF-01 | Preparación arquitectónica para offline | definido | ADR-005 |
 
 ## Handoff activo
 Primer vertical slice comercial completo y verificado: negocio → producto → cliente → venta → factura interna → pago.
 
-Slice actual: inventario por sucursal.
+Inventario por sucursal verificado.
 
-Siguiente slice recomendado una vez verificado:
+Siguiente slice recomendado:
 1. caja: apertura, movimientos, cobros y cierre;
 2. devoluciones con reversión de inventario/pago;
 3. preparación formal de ElectronicInvoicing/e-CF.
