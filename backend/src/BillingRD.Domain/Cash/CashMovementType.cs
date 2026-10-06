@@ -6,5 +6,6 @@ public enum CashMovementType
     ManualIncome = 2,
     Expense = 3,
     Withdrawal = 4,
-    Adjustment = 5
+    Adjustment = 5,
+    RefundCash = 6
 }

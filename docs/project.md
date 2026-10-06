@@ -15,6 +15,7 @@
 - Las ventas guardan snapshots monetarios/fiscales por línea y requieren idempotencia.
 - Inventario: stock por sucursal con balances + movimientos auditables; stock negativo deshabilitado en el MVP.
 - Caja: múltiples CashRegister por sucursal, una sesión abierta por caja, movimientos auditables y conciliación esperado/contado.
+- Devoluciones: parciales/totales contra snapshots de venta, con reposición de inventario y reembolso trazable por método.
 - e-CF/DGII será un módulo aislado de la factura interna.
 - Desktop debe poder evolucionar a offline con sincronización segura.
 
@@ -25,7 +26,7 @@
 - Aislamiento entre negocios por defecto.
 - Crecer sin microservicios prematuros.
 - Fiscalidad desde fuentes oficiales vigentes.
-- Ningún retry puede duplicar una venta o pago.
+- Ningún retry puede duplicar una venta, devolución, pago o reversión operativa.
 
 ## Decisiones pendientes
 | ID | Decisión | Afecta |

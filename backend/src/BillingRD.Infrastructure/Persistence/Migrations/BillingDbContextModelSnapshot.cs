@@ -130,11 +130,13 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.Property<Guid>("CreatedByUserId").HasColumnType("uuid");
             b.Property<Guid?>("PaymentId").HasColumnType("uuid");
             b.Property<string>("Reason").HasMaxLength(240).HasColumnType("character varying(240)");
+            b.Property<Guid?>("RefundId").HasColumnType("uuid");
             b.Property<Guid?>("SaleId").HasColumnType("uuid");
             b.Property<string>("Type").IsRequired().HasMaxLength(32).HasColumnType("character varying(32)");
             b.HasKey("Id");
             b.HasIndex("BusinessId");
             b.HasIndex("CreatedByUserId");
+            b.HasIndex("RefundId").IsUnique().HasFilter(@"""RefundId"" IS NOT NULL");
             b.HasIndex("SaleId");
             b.HasIndex("CashSessionId", "CreatedAtUtc");
             b.HasIndex("PaymentId").IsUnique().HasFilter(@"""PaymentId"" IS NOT NULL");
@@ -202,6 +204,7 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.Property<Guid>("ProductId").HasColumnType("uuid");
             b.Property<decimal>("QuantityDelta").HasPrecision(18, 3).HasColumnType("numeric(18,3)");
             b.Property<string>("Reason").HasMaxLength(240).HasColumnType("character varying(240)");
+            b.Property<Guid?>("ReturnId").HasColumnType("uuid");
             b.Property<Guid?>("SaleId").HasColumnType("uuid");
             b.Property<string>("Type").IsRequired().HasMaxLength(24).HasColumnType("character varying(24)");
             b.HasKey("Id");
@@ -209,7 +212,8 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.HasIndex("CreatedByUserId");
             b.HasIndex("ProductId");
             b.HasIndex("BranchId", "ProductId", "CreatedAtUtc");
-            b.HasIndex("SaleId", "ProductId").IsUnique().HasFilter(@"""SaleId"" IS NOT NULL");
+            b.HasIndex("ReturnId", "ProductId").IsUnique().HasFilter(@"""ReturnId"" IS NOT NULL");
+            b.HasIndex("SaleId", "ProductId").IsUnique().HasFilter(@"""SaleId"" IS NOT NULL AND ""ReturnId"" IS NULL");
             b.ToTable("stock_movements");
         });
 
@@ -226,6 +230,70 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.HasIndex("BusinessId");
             b.HasIndex("SaleId");
             b.ToTable("payments");
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.Returns.Refund", b =>
+        {
+            b.Property<Guid>("Id").ValueGeneratedNever().HasColumnType("uuid");
+            b.Property<decimal>("Amount").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.Property<Guid>("BusinessId").HasColumnType("uuid");
+            b.Property<DateTimeOffset>("CreatedAtUtc").HasColumnType("timestamp with time zone");
+            b.Property<string>("Method").IsRequired().HasMaxLength(32).HasColumnType("character varying(32)");
+            b.Property<string>("Reference").HasMaxLength(160).HasColumnType("character varying(160)");
+            b.Property<Guid>("ReturnId").HasColumnType("uuid");
+            b.Property<Guid>("SaleId").HasColumnType("uuid");
+            b.HasKey("Id");
+            b.HasIndex("BusinessId");
+            b.HasIndex("ReturnId");
+            b.HasIndex("SaleId");
+            b.ToTable("refunds");
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.Returns.ReturnLine", b =>
+        {
+            b.Property<Guid>("Id").ValueGeneratedNever().HasColumnType("uuid");
+            b.Property<Guid>("BusinessId").HasColumnType("uuid");
+            b.Property<string>("ItbisCategory").IsRequired().HasMaxLength(16).HasColumnType("character varying(16)");
+            b.Property<Guid>("ProductId").HasColumnType("uuid");
+            b.Property<string>("ProductName").IsRequired().HasMaxLength(200).HasColumnType("character varying(200)");
+            b.Property<decimal>("Quantity").HasPrecision(18, 3).HasColumnType("numeric(18,3)");
+            b.Property<Guid>("ReturnId").HasColumnType("uuid");
+            b.Property<Guid>("SaleId").HasColumnType("uuid");
+            b.Property<Guid>("SaleLineId").HasColumnType("uuid");
+            b.Property<string>("Sku").IsRequired().HasMaxLength(80).HasColumnType("character varying(80)");
+            b.Property<decimal>("Subtotal").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.Property<decimal>("TaxAmount").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.Property<decimal>("TaxRate").HasPrecision(5, 2).HasColumnType("numeric(5,2)");
+            b.Property<decimal>("Total").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.Property<decimal>("UnitPrice").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.HasKey("Id");
+            b.HasIndex("BusinessId");
+            b.HasIndex("ProductId");
+            b.HasIndex("ReturnId");
+            b.HasIndex("SaleId");
+            b.HasIndex("SaleLineId");
+            b.ToTable("return_lines");
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.Returns.SalesReturn", b =>
+        {
+            b.Property<Guid>("Id").ValueGeneratedNever().HasColumnType("uuid");
+            b.Property<Guid>("BranchId").HasColumnType("uuid");
+            b.Property<Guid>("BusinessId").HasColumnType("uuid");
+            b.Property<DateTimeOffset>("CreatedAtUtc").HasColumnType("timestamp with time zone");
+            b.Property<Guid>("CreatedByUserId").HasColumnType("uuid");
+            b.Property<string>("IdempotencyKey").IsRequired().HasMaxLength(100).HasColumnType("character varying(100)");
+            b.Property<string>("Reason").IsRequired().HasMaxLength(240).HasColumnType("character varying(240)");
+            b.Property<Guid>("SaleId").HasColumnType("uuid");
+            b.Property<decimal>("Subtotal").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.Property<decimal>("TaxAmount").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.Property<decimal>("Total").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.HasKey("Id");
+            b.HasIndex("BranchId");
+            b.HasIndex("CreatedByUserId");
+            b.HasIndex("SaleId");
+            b.HasIndex("BusinessId", "IdempotencyKey").IsUnique();
+            b.ToTable("returns");
         });
 
         modelBuilder.Entity("BillingRD.Domain.Sales.Sale", b =>
@@ -357,6 +425,11 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
                 .HasForeignKey("PaymentId")
                 .OnDelete(DeleteBehavior.Restrict);
 
+            b.HasOne("BillingRD.Domain.Returns.Refund", null)
+                .WithMany()
+                .HasForeignKey("RefundId")
+                .OnDelete(DeleteBehavior.Restrict);
+
             b.HasOne("BillingRD.Domain.Sales.Sale", null)
                 .WithMany()
                 .HasForeignKey("SaleId")
@@ -451,6 +524,11 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
                 .OnDelete(DeleteBehavior.Restrict)
                 .IsRequired();
 
+            b.HasOne("BillingRD.Domain.Returns.SalesReturn", null)
+                .WithMany()
+                .HasForeignKey("ReturnId")
+                .OnDelete(DeleteBehavior.Restrict);
+
             b.HasOne("BillingRD.Domain.Sales.Sale", null)
                 .WithMany()
                 .HasForeignKey("SaleId")
@@ -462,6 +540,87 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.HasOne("BillingRD.Domain.Businesses.Business", null)
                 .WithMany()
                 .HasForeignKey("BusinessId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Sales.Sale", null)
+                .WithMany()
+                .HasForeignKey("SaleId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.Returns.Refund", b =>
+        {
+            b.HasOne("BillingRD.Domain.Businesses.Business", null)
+                .WithMany()
+                .HasForeignKey("BusinessId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Returns.SalesReturn", null)
+                .WithMany("Refunds")
+                .HasForeignKey("ReturnId")
+                .OnDelete(DeleteBehavior.Cascade)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Sales.Sale", null)
+                .WithMany()
+                .HasForeignKey("SaleId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.Returns.ReturnLine", b =>
+        {
+            b.HasOne("BillingRD.Domain.Businesses.Business", null)
+                .WithMany()
+                .HasForeignKey("BusinessId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Catalog.Product", null)
+                .WithMany()
+                .HasForeignKey("ProductId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Returns.SalesReturn", null)
+                .WithMany("Lines")
+                .HasForeignKey("ReturnId")
+                .OnDelete(DeleteBehavior.Cascade)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Sales.Sale", null)
+                .WithMany()
+                .HasForeignKey("SaleId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Sales.SaleLine", null)
+                .WithMany()
+                .HasForeignKey("SaleLineId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.Returns.SalesReturn", b =>
+        {
+            b.HasOne("BillingRD.Domain.Businesses.Branch", null)
+                .WithMany()
+                .HasForeignKey("BranchId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Businesses.Business", null)
+                .WithMany()
+                .HasForeignKey("BusinessId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Identity.UserAccount", null)
+                .WithMany()
+                .HasForeignKey("CreatedByUserId")
                 .OnDelete(DeleteBehavior.Restrict)
                 .IsRequired();
 
@@ -518,6 +677,15 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
                 .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
 
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.Returns.SalesReturn", b =>
+        {
+            b.Navigation("Lines")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+            b.Navigation("Refunds")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
         });
 
         modelBuilder.Entity("BillingRD.Domain.Sales.Sale", b =>

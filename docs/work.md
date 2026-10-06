@@ -26,6 +26,9 @@ Estados: definido, en curso, pendiente de decisión, implementado, verificado, p
 | CASH-01 | CashRegister + CashSession + apertura/cierre | verificado | PR #7 + CI #37476745272 |
 | CASH-02 | Venta Cash genera CashMovement idempotente | verificado | mixed payment + retry tests |
 | CASH-03 | Conciliación Expected/Counted/Difference | verificado | cierre con diferencia + CI #37476745272 |
+| RET-01 | Devolución parcial/total sin exceder cantidad vendida | verificado | PR #8 + CI #37481370309 |
+| RET-02 | Reposición de inventario + reembolso por método | verificado | ReturnFlowTests + PostgreSQL |
+| RET-03 | Cash refund en sesión abierta + idempotencia | verificado | ReturnFlowTests + CI #37481370309 |
 | DGII-01 | Integración fiscal desde fuente oficial vigente | definido | sin implementación |
 | OFF-01 | Preparación arquitectónica para offline | definido | ADR-005 |
 
@@ -36,10 +39,12 @@ Inventario por sucursal verificado.
 
 Caja / cash register verificada.
 
+Devoluciones y reembolsos verificados.
+
 Siguiente slice recomendado:
-1. devoluciones con reversión de inventario/pago;
-2. notas internas;
-3. preparación formal de ElectronicInvoicing/e-CF.
+1. notas internas / motivo y estado comercial de ajustes;
+2. preparar formalmente ElectronicInvoicing/e-CF y notas de crédito;
+3. definir el primer flujo offline de desktop.
 
 Decisiones ya resueltas:
 - Business como frontera principal y Branch como hijo;
@@ -49,4 +54,5 @@ Decisiones ya resueltas:
 - BusinessId activo revalidado contra membership en cada request;
 - Exempt y ZeroRated separados, ITBIS 0/16/18, precio MVP antes de impuesto y snapshot fiscal por línea;
 - venta confirmada totalmente pagada e idempotente en esta primera fase;
-- inventario controlado por sucursal, sin stock negativo en el MVP.
+- inventario controlado por sucursal, sin stock negativo en el MVP;
+- devolución interna separada de nota de crédito fiscal, con reversión atómica de stock/caja.

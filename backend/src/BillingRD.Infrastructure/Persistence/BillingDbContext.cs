@@ -7,6 +7,7 @@ using BillingRD.Domain.Customers;
 using BillingRD.Domain.Identity;
 using BillingRD.Domain.Inventory;
 using BillingRD.Domain.Payments;
+using BillingRD.Domain.Returns;
 using BillingRD.Domain.Sales;
 using Microsoft.EntityFrameworkCore;
 
@@ -33,6 +34,9 @@ public sealed class BillingDbContext(
     public DbSet<CashRegister> CashRegisters => Set<CashRegister>();
     public DbSet<CashSession> CashSessions => Set<CashSession>();
     public DbSet<CashMovement> CashMovements => Set<CashMovement>();
+    public DbSet<SalesReturn> Returns => Set<SalesReturn>();
+    public DbSet<ReturnLine> ReturnLines => Set<ReturnLine>();
+    public DbSet<Refund> Refunds => Set<Refund>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -51,5 +55,8 @@ public sealed class BillingDbContext(
         modelBuilder.Entity<CashRegister>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
         modelBuilder.Entity<CashSession>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
         modelBuilder.Entity<CashMovement>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
+        modelBuilder.Entity<SalesReturn>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
+        modelBuilder.Entity<ReturnLine>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
+        modelBuilder.Entity<Refund>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
     }
 }

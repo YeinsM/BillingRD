@@ -3,6 +3,7 @@ using BillingRD.Domain.Catalog;
 using BillingRD.Domain.Identity;
 using BillingRD.Domain.Inventory;
 using BillingRD.Domain.Sales;
+using BillingRD.Domain.Returns;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -38,10 +39,14 @@ internal sealed class StockMovementConfiguration : IEntityTypeConfiguration<Stoc
         builder.HasOne<Product>().WithMany().HasForeignKey(x => x.ProductId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<UserAccount>().WithMany().HasForeignKey(x => x.CreatedByUserId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Sale>().WithMany().HasForeignKey(x => x.SaleId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<SalesReturn>().WithMany().HasForeignKey(x => x.ReturnId).OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(x => new { x.SaleId, x.ProductId })
             .IsUnique()
-            .HasFilter(@"""SaleId"" IS NOT NULL");
+            .HasFilter(@"""SaleId"" IS NOT NULL AND ""ReturnId"" IS NULL");
+        builder.HasIndex(x => new { x.ReturnId, x.ProductId })
+            .IsUnique()
+            .HasFilter(@"""ReturnId"" IS NOT NULL");
         builder.HasIndex(x => new { x.BranchId, x.ProductId, x.CreatedAtUtc });
     }
 }

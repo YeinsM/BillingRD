@@ -15,6 +15,7 @@ public sealed class CashMovement
         decimal amount,
         Guid? saleId,
         Guid? paymentId,
+        Guid? refundId,
         string? reason)
     {
         Id = id;
@@ -25,6 +26,7 @@ public sealed class CashMovement
         Amount = MoneyMath.RoundCurrency(amount);
         SaleId = saleId;
         PaymentId = paymentId;
+        RefundId = refundId;
         Reason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
         CreatedAtUtc = DateTimeOffset.UtcNow;
     }
@@ -37,6 +39,7 @@ public sealed class CashMovement
     public decimal Amount { get; private set; }
     public Guid? SaleId { get; private set; }
     public Guid? PaymentId { get; private set; }
+    public Guid? RefundId { get; private set; }
     public string? Reason { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; private set; }
 
@@ -59,6 +62,30 @@ public sealed class CashMovement
             amount,
             saleId,
             paymentId,
+            null,
+            null);
+    }
+
+    public static CashMovement FromRefund(
+        Guid businessId,
+        Guid cashSessionId,
+        Guid userId,
+        Guid saleId,
+        Guid refundId,
+        decimal amount)
+    {
+        if (amount <= 0) throw new ArgumentOutOfRangeException(nameof(amount));
+
+        return new CashMovement(
+            Guid.CreateVersion7(),
+            businessId,
+            cashSessionId,
+            userId,
+            CashMovementType.RefundCash,
+            -amount,
+            saleId,
+            null,
+            refundId,
             null);
     }
 
@@ -90,6 +117,7 @@ public sealed class CashMovement
             userId,
             type,
             signedAmount,
+            null,
             null,
             null,
             reason);

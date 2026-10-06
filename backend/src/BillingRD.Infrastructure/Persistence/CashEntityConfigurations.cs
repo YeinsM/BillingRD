@@ -3,6 +3,7 @@ using BillingRD.Domain.Cash;
 using BillingRD.Domain.Identity;
 using BillingRD.Domain.Payments;
 using BillingRD.Domain.Sales;
+using BillingRD.Domain.Returns;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -57,6 +58,9 @@ internal sealed class CashMovementConfiguration : IEntityTypeConfiguration<CashM
         builder.HasIndex(x => x.PaymentId)
             .IsUnique()
             .HasFilter(@"""PaymentId"" IS NOT NULL");
+        builder.HasIndex(x => x.RefundId)
+            .IsUnique()
+            .HasFilter(@"""RefundId"" IS NOT NULL");
 
         builder.HasIndex(x => new { x.CashSessionId, x.CreatedAtUtc });
 
@@ -65,5 +69,6 @@ internal sealed class CashMovementConfiguration : IEntityTypeConfiguration<CashM
         builder.HasOne<UserAccount>().WithMany().HasForeignKey(x => x.CreatedByUserId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Sale>().WithMany().HasForeignKey(x => x.SaleId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Payment>().WithMany().HasForeignKey(x => x.PaymentId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<Refund>().WithMany().HasForeignKey(x => x.RefundId).OnDelete(DeleteBehavior.Restrict);
     }
 }

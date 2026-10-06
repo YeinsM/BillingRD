@@ -342,6 +342,7 @@ public static class SaleEndpoints
             .OrderBy(line => line.Id)
             .Select(line => new
             {
+                line.Id,
                 line.ProductId,
                 line.ProductName,
                 line.Sku,

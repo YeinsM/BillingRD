@@ -17,6 +17,7 @@ public sealed class StockMovement
         decimal quantityDelta,
         decimal balanceAfter,
         Guid? saleId,
+        Guid? returnId,
         string? reason)
     {
         Id = id;
@@ -28,6 +29,7 @@ public sealed class StockMovement
         QuantityDelta = quantityDelta;
         BalanceAfter = balanceAfter;
         SaleId = saleId;
+        ReturnId = returnId;
         Reason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
         CreatedAtUtc = DateTimeOffset.UtcNow;
     }
@@ -41,6 +43,7 @@ public sealed class StockMovement
     public decimal QuantityDelta { get; private set; }
     public decimal BalanceAfter { get; private set; }
     public Guid? SaleId { get; private set; }
+    public Guid? ReturnId { get; private set; }
     public string? Reason { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; private set; }
 
@@ -67,6 +70,7 @@ public sealed class StockMovement
             quantityDelta,
             balanceAfter,
             null,
+            null,
             reason);
     }
 
@@ -91,6 +95,32 @@ public sealed class StockMovement
             -quantity,
             balanceAfter,
             saleId,
+            null,
+            null);
+    }
+    public static StockMovement CreateReturn(
+        Guid businessId,
+        Guid branchId,
+        Guid productId,
+        Guid createdByUserId,
+        Guid saleId,
+        Guid returnId,
+        decimal quantity,
+        decimal balanceAfter)
+    {
+        if (quantity <= 0) throw new ArgumentOutOfRangeException(nameof(quantity));
+
+        return new StockMovement(
+            Guid.CreateVersion7(),
+            businessId,
+            branchId,
+            productId,
+            createdByUserId,
+            StockMovementType.Return,
+            quantity,
+            balanceAfter,
+            saleId,
+            returnId,
             null);
     }
 }
