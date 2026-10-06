@@ -1,19 +1,22 @@
+using BillingRD.Domain.Billing;
+
 namespace BillingRD.Domain.Catalog;
 
 /// <summary>
-/// Business-owned sellable item. Tax behavior and inventory policy are intentionally deferred.
+/// Business-owned sellable item. SalePrice is tax-exclusive in the MVP.
 /// </summary>
 public sealed class Product
 {
     private Product() { }
 
-    private Product(Guid id, Guid businessId, string name, string sku, decimal salePrice)
+    private Product(Guid id, Guid businessId, string name, string sku, decimal salePrice, ItbisCategory itbisCategory)
     {
         Id = id;
         BusinessId = businessId;
         Name = name;
         Sku = sku;
-        SalePrice = salePrice;
+        SalePrice = MoneyMath.RoundCurrency(salePrice);
+        ItbisCategory = itbisCategory;
         CreatedAtUtc = DateTimeOffset.UtcNow;
         IsActive = true;
     }
@@ -24,16 +27,23 @@ public sealed class Product
     public string Sku { get; private set; } = string.Empty;
     public string? Barcode { get; private set; }
     public decimal SalePrice { get; private set; }
+    public ItbisCategory ItbisCategory { get; private set; } = ItbisCategory.Standard;
     public bool IsActive { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; private set; }
 
-    public static Product Create(Guid businessId, string name, string sku, decimal salePrice)
+    public static Product Create(
+        Guid businessId,
+        string name,
+        string sku,
+        decimal salePrice,
+        ItbisCategory itbisCategory = ItbisCategory.Standard)
     {
         if (businessId == Guid.Empty) throw new ArgumentException("Business id is required.", nameof(businessId));
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         ArgumentException.ThrowIfNullOrWhiteSpace(sku);
         if (salePrice < 0) throw new ArgumentOutOfRangeException(nameof(salePrice));
+        _ = itbisCategory.Rate();
 
-        return new Product(Guid.CreateVersion7(), businessId, name.Trim(), sku.Trim(), salePrice);
+        return new Product(Guid.CreateVersion7(), businessId, name.Trim(), sku.Trim(), salePrice, itbisCategory);
     }
 }
