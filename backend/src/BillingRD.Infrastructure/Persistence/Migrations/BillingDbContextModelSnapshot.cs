@@ -303,7 +303,8 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
 
         modelBuilder.Entity("BillingRD.Domain.Sales.Sale", b =>
         {
-            b.Navigation("Lines");
+            b.Navigation("Lines")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
         });
     }
 }
