@@ -98,6 +98,7 @@ app.MapSaleEndpoints();
 app.MapInventoryEndpoints();
 app.MapCashEndpoints();
 app.MapReturnEndpoints();
+app.MapElectronicInvoicingEndpoints();
 
 app.Run();
 
