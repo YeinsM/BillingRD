@@ -16,7 +16,7 @@ Estados: definido, en curso, pendiente de decisión, implementado, verificado, p
 | AUTH-01 | Registro/login/logout con cookie HttpOnly y password hashing | verificado | PR #4 + CI #37129390754 |
 | AUTH-02 | Selección de negocio validada contra BusinessMembership | verificado | HTTP integration test de acceso cruzado |
 | API-01 | Business/Product/Customer API autenticada | verificado | HTTP integration test contra PostgreSQL |
-| TAX-01 | ITBIS 0/16/18 + redondeo/snapshot por línea | verificado | PR #5 + CI #37463009897 |
+| TAX-01 | Exento + ITBIS 0/16/18 + redondeo/snapshot por línea | en curso | PR #5; revalidación tras separar Exempt/ZeroRated |
 | SALE-01 | Sale/SaleLine + idempotencia + autorización | verificado | PostgreSQL/HTTP integration tests |
 | INV-01 | Invoice interna 1:1 con Sale | verificado | PostgreSQL/HTTP integration tests |
 | PAY-01 | Pagos múltiples que cuadran exactamente con Sale.Total | verificado | PostgreSQL/HTTP integration tests |
@@ -38,5 +38,5 @@ Decisiones ya resueltas:
 - EF Core 10 + Npgsql;
 - cookie HttpOnly same-site para autenticación del MVP;
 - BusinessId activo revalidado contra membership en cada request;
-- ITBIS 0/16/18, precio MVP antes de impuesto y snapshot fiscal por línea;
+- Exempt y ZeroRated separados, ITBIS 0/16/18, precio MVP antes de impuesto y snapshot fiscal por línea;
 - venta confirmada totalmente pagada e idempotente en esta primera fase.
