@@ -1,4 +1,5 @@
 using BillingRD.Api.Security;
+using BillingRD.Domain.Billing;
 using BillingRD.Domain.Catalog;
 using BillingRD.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -36,6 +37,7 @@ public static class ProductEndpoints
                 product.Sku,
                 product.Barcode,
                 product.SalePrice,
+                product.ItbisCategory,
                 product.IsActive
             })
             .ToListAsync(cancellationToken);
@@ -56,11 +58,12 @@ public static class ProductEndpoints
 
         if (string.IsNullOrWhiteSpace(request.Name) ||
             string.IsNullOrWhiteSpace(request.Sku) ||
-            request.SalePrice < 0)
+            request.SalePrice < 0 ||
+            !Enum.IsDefined(request.ItbisCategory))
         {
             return Results.ValidationProblem(new Dictionary<string, string[]>
             {
-                ["product"] = ["Name, SKU and a non-negative sale price are required."]
+                ["product"] = ["Name, SKU, non-negative sale price and a supported ITBIS category are required."]
             });
         }
 
@@ -79,7 +82,8 @@ public static class ProductEndpoints
             currentBusiness.BusinessId.Value,
             request.Name,
             normalizedSku,
-            request.SalePrice);
+            request.SalePrice,
+            request.ItbisCategory);
 
         dbContext.Products.Add(product);
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -89,9 +93,14 @@ public static class ProductEndpoints
             product.Id,
             product.Name,
             product.Sku,
-            product.SalePrice
+            product.SalePrice,
+            product.ItbisCategory
         });
     }
 
-    public sealed record CreateProductRequest(string? Name, string? Sku, decimal SalePrice);
+    public sealed record CreateProductRequest(
+        string? Name,
+        string? Sku,
+        decimal SalePrice,
+        ItbisCategory ItbisCategory = ItbisCategory.Standard);
 }
