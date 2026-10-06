@@ -9,7 +9,14 @@ public sealed class Product
 {
     private Product() { }
 
-    private Product(Guid id, Guid businessId, string name, string sku, decimal salePrice, ItbisCategory itbisCategory)
+    private Product(
+        Guid id,
+        Guid businessId,
+        string name,
+        string sku,
+        decimal salePrice,
+        ItbisCategory itbisCategory,
+        bool tracksInventory)
     {
         Id = id;
         BusinessId = businessId;
@@ -17,6 +24,7 @@ public sealed class Product
         Sku = sku;
         SalePrice = MoneyMath.RoundCurrency(salePrice);
         ItbisCategory = itbisCategory;
+        TracksInventory = tracksInventory;
         CreatedAtUtc = DateTimeOffset.UtcNow;
         IsActive = true;
     }
@@ -28,6 +36,7 @@ public sealed class Product
     public string? Barcode { get; private set; }
     public decimal SalePrice { get; private set; }
     public ItbisCategory ItbisCategory { get; private set; } = ItbisCategory.Standard;
+    public bool TracksInventory { get; private set; }
     public bool IsActive { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; private set; }
 
@@ -36,7 +45,8 @@ public sealed class Product
         string name,
         string sku,
         decimal salePrice,
-        ItbisCategory itbisCategory = ItbisCategory.Standard)
+        ItbisCategory itbisCategory = ItbisCategory.Standard,
+        bool tracksInventory = true)
     {
         if (businessId == Guid.Empty) throw new ArgumentException("Business id is required.", nameof(businessId));
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -44,6 +54,13 @@ public sealed class Product
         if (salePrice < 0) throw new ArgumentOutOfRangeException(nameof(salePrice));
         _ = itbisCategory.Rate();
 
-        return new Product(Guid.CreateVersion7(), businessId, name.Trim(), sku.Trim(), salePrice, itbisCategory);
+        return new Product(
+            Guid.CreateVersion7(),
+            businessId,
+            name.Trim(),
+            sku.Trim(),
+            salePrice,
+            itbisCategory,
+            tracksInventory);
     }
 }
