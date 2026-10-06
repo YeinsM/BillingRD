@@ -53,6 +53,17 @@ jobs:
       - name: Build API
         run: dotnet build backend/src/BillingRD.Api/BillingRD.Api.csproj --configuration Release --no-restore
 
+      - name: Diagnose EF pending model
+        shell: bash
+        run: |
+          dotnet tool restore --tool-manifest backend/.config/dotnet-tools.json
+          dotnet tool run dotnet-ef migrations add DiagnosticModelDiff             --project backend/src/BillingRD.Infrastructure/BillingRD.Infrastructure.csproj             --startup-project backend/src/BillingRD.Api/BillingRD.Api.csproj             --context BillingDbContext             --output-dir Persistence/Migrations/Diagnostic
+          echo "===== SNAPSHOT DIFF ====="
+          git diff -- backend/src/BillingRD.Infrastructure/Persistence/Migrations/BillingDbContextModelSnapshot.cs || true
+          echo "===== GENERATED DIAGNOSTIC MIGRATION ====="
+          find backend/src/BillingRD.Infrastructure/Persistence/Migrations/Diagnostic -type f -maxdepth 1 -print -exec sed -n '1,260p' {} \;
+          exit 1
+
       - name: Run PostgreSQL integration tests
         run: dotnet test tests/BillingRD.Infrastructure.IntegrationTests/BillingRD.Infrastructure.IntegrationTests.csproj --configuration Release --no-restore
 
