@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using BillingRD.Api.Security;
+using BillingRD.Domain.Adjustments;
 using BillingRD.Domain.Billing;
 using BillingRD.Domain.Cash;
 using BillingRD.Domain.Identity;
@@ -331,7 +332,18 @@ public static class ReturnEndpoints
                 balanceAfter));
         }
 
+        var adjustment = AdjustmentDocument.FromReturn(
+            currentBusiness.BusinessId.Value,
+            sale.Id,
+            salesReturn.Id,
+            userId,
+            salesReturn.Reason,
+            salesReturn.Subtotal,
+            salesReturn.TaxAmount,
+            salesReturn.Total);
+
         dbContext.Returns.Add(salesReturn);
+        dbContext.AdjustmentDocuments.Add(adjustment);
         dbContext.StockMovements.AddRange(stockMovements);
         dbContext.CashMovements.AddRange(cashMovements);
 
