@@ -116,3 +116,26 @@ el cálculo final para evitar movimientos concurrentes omitidos.
 
 Motivo: separar caja, turno y movimientos permite conciliación operativa, múltiples cajas por sucursal y auditoría
 sin mezclar el saldo físico con la entidad Payment.
+
+
+## ADR-014 — Devoluciones parciales con reversión operativa — 2026-10-06
+Estado: adoptado.
+SalesReturn representa una devolución interna ligada a la Sale original. ReturnLine conserva snapshot monetario/fiscal
+de la línea vendida y Refund registra el método y monto devuelto. Las devoluciones pueden ser parciales o totales,
+pero la suma acumulada por SaleLine nunca puede exceder la cantidad originalmente vendida.
+
+El monto de cada devolución se calcula con el snapshot de SaleLine, no con el Product actual. Cuando una devolución
+consume exactamente la cantidad restante de una línea, usa el remanente monetario de la línea original para absorber
+diferencias de redondeo y evitar que devoluciones parciales acumuladas excedan el total vendido.
+
+Los reembolsos deben sumar exactamente SalesReturn.Total y, por método, no pueden exceder el monto original cobrado
+menos reembolsos previos del mismo método. Un reembolso Cash requiere una CashSession abierta de la misma sucursal y
+genera CashMovement negativo tipo RefundCash. Productos con TracksInventory restauran stock en la sucursal original
+y generan StockMovement tipo Return.
+
+POST /api/returns requiere Idempotency-Key único por Business. Las devoluciones de una misma Sale se serializan con
+bloqueo de la venta original para impedir over-return concurrente. Owner, Administrator y Cashier pueden registrar
+devoluciones. Esta entidad es interna y no constituye todavía una nota de crédito fiscal/e-CF.
+
+Motivo: la devolución debe revertir de forma atómica inventario y dinero sin reescribir la venta original, preservando
+auditoría y dejando la futura nota de crédito DGII como adaptación fiscal separada.
