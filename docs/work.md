@@ -16,17 +16,21 @@ Estados: definido, en curso, pendiente de decisión, implementado, verificado, p
 | AUTH-01 | Registro/login/logout con cookie HttpOnly y password hashing | verificado | PR #4 + CI #37129390754 |
 | AUTH-02 | Selección de negocio validada contra BusinessMembership | verificado | HTTP integration test de acceso cruzado |
 | API-01 | Business/Product/Customer API autenticada | verificado | HTTP integration test contra PostgreSQL |
-| TAX-01 | ITBIS 0/16/18 + redondeo/snapshot por línea | implementado | ADR-010 + rama sales-invoice-payment |
-| SALE-01 | Sale/SaleLine + idempotencia + autorización | implementado | pendiente CI |
-| INV-01 | Invoice interna 1:1 con Sale | implementado | pendiente CI |
-| PAY-01 | Pagos múltiples que cuadran exactamente con Sale.Total | implementado | pendiente CI |
-| MVP-01 | Negocio → producto → cliente → venta → factura → pago | en curso | flujo transaccional implementado; pendiente CI |
+| TAX-01 | ITBIS 0/16/18 + redondeo/snapshot por línea | verificado | PR #5 + CI #37463009897 |
+| SALE-01 | Sale/SaleLine + idempotencia + autorización | verificado | PostgreSQL/HTTP integration tests |
+| INV-01 | Invoice interna 1:1 con Sale | verificado | PostgreSQL/HTTP integration tests |
+| PAY-01 | Pagos múltiples que cuadran exactamente con Sale.Total | verificado | PostgreSQL/HTTP integration tests |
+| MVP-01 | Negocio → producto → cliente → venta → factura → pago | verificado | PR #5 + CI #37463009897 |
 | DGII-01 | Integración fiscal desde fuente oficial vigente | definido | sin implementación |
 | OFF-01 | Preparación arquitectónica para offline | definido | ADR-005 |
 
 ## Handoff activo
-Validar el flujo Sale → SaleLine → Invoice → Payment contra PostgreSQL real.
-Si CI queda verde, cerrar PR y continuar con inventario/movimientos y caja antes de integrar e-CF.
+Primer vertical slice comercial completo y verificado: negocio → producto → cliente → venta → factura interna → pago.
+
+Siguiente slice recomendado:
+1. movimientos de inventario por sucursal ligados a venta/ajuste/devolución;
+2. caja: apertura, movimientos, cobros y cierre;
+3. luego devoluciones/notas internas y preparación formal de ElectronicInvoicing/e-CF.
 
 Decisiones ya resueltas:
 - Business como frontera principal y Branch como hijo;
