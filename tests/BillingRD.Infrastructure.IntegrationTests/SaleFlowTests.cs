@@ -215,7 +215,8 @@ public sealed class SaleFlowTests
             name,
             sku,
             salePrice = price,
-            itbisCategory
+            itbisCategory,
+            tracksInventory = false
         });
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
