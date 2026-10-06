@@ -18,7 +18,11 @@ public static class AuthEndpoints
 
         group.MapPost("/register", RegisterAsync).RequireRateLimiting("auth");
         group.MapPost("/login", LoginAsync).RequireRateLimiting("auth");
-        group.MapPost("/logout", LogoutAsync).RequireAuthorization();
+        group.MapPost("/logout", async (HttpContext httpContext) =>
+        {
+            await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return Results.NoContent();
+        }).RequireAuthorization();
         group.MapPost("/select-business", SelectBusinessAsync).RequireAuthorization();
         group.MapGet("/me", GetMe).RequireAuthorization();
 
@@ -111,12 +115,6 @@ public static class AuthEndpoints
         await AuthenticationSession.SignInAsync(httpContext, user, activeBusinessId);
 
         return Results.Ok(new { user.Id, user.Email, activeBusinessId });
-    }
-
-    private static async Task<IResult> LogoutAsync(HttpContext httpContext)
-    {
-        await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        return Results.NoContent();
     }
 
     private static async Task<IResult> SelectBusinessAsync(
