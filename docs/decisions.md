@@ -98,3 +98,21 @@ Sale genera movimientos tipo Sale automáticamente. Un producto con TracksInvent
 Motivo: una tienda necesita consistencia operativa inmediata y trazabilidad. Permitir stock negativo por defecto
 ocultaría errores de recepción/conteo y complicaría la reconciliación. Si se requiere venta con stock negativo en el
 futuro deberá ser una política explícita por negocio/sucursal con ADR y pruebas de concurrencia propias.
+
+
+## ADR-013 — Caja por sesión con movimientos auditables — 2026-10-06
+Estado: adoptado.
+CashRegister representa una caja física/lógica ligada a una Branch. CashSession representa un turno abierto/cerrado.
+Solo puede existir una CashSession abierta por CashRegister. El efectivo esperado se deriva de OpeningBalance +
+CashMovement(s); al cerrar se guarda snapshot de ExpectedCashAtClose, CountedCash y Difference.
+
+Los pagos Cash de ventas requieren una sesión abierta de una caja perteneciente a la misma sucursal de la venta.
+Cada Payment efectivo genera exactamente un CashMovement tipo SaleCash. Card y BankTransfer no modifican efectivo.
+PaymentId es único en CashMovement para impedir duplicación por retries.
+
+Los movimientos manuales admitidos en el MVP son ManualIncome, Expense y Withdrawal. Requieren motivo y permisos
+Owner/Administrator. Owner, Administrator y Cashier pueden abrir/cerrar sesiones. El cierre bloquea la sesión durante
+el cálculo final para evitar movimientos concurrentes omitidos.
+
+Motivo: separar caja, turno y movimientos permite conciliación operativa, múltiples cajas por sucursal y auditoría
+sin mezclar el saldo físico con la entidad Payment.
