@@ -55,3 +55,29 @@ Motivo: para una SPA/PWA servida same-site con la API, la cookie HttpOnly reduce
 al JavaScript del navegador y mantiene el MVP simple. Si web y API pasan a sitios distintos, o antes de exposición
 pública con escenarios cross-site, se debe revisar política de cookies/CORS y añadir la estrategia antiforgery
 correspondiente antes de considerar el flujo listo para producción.
+
+## ADR-010 — Modelo de ITBIS y redondeo del MVP — 2026-10-06
+Estado: adoptado.
+BillingRD soporta inicialmente tres categorías de ITBIS por producto: Exempt (0%), Reduced (16%) y Standard (18%).
+La tasa se configura en Product, pero SaleLine guarda snapshot de categoría, tasa, precio, subtotal, impuesto y total.
+
+SalePrice se interpreta inicialmente como precio antes de ITBIS. El impuesto se calcula por línea:
+Subtotal = round(Quantity × UnitPrice, 2)
+TaxAmount = round(Subtotal × TaxRate / 100, 2)
+Total = Subtotal + TaxAmount
+El redondeo monetario usa 2 decimales con MidpointRounding.AwayFromZero.
+
+Motivo: DGII mantiene tasa general de 18%, tasa reducida de 16% para determinados productos y bienes/servicios exentos.
+El snapshot evita que cambios futuros de catálogo o tasas reescriban ventas históricas.
+Una futura opción de precios con impuestos incluidos requiere ADR y casos de prueba propios antes de implementarse.
+
+## ADR-011 — Venta pagada e idempotente como primera transacción — 2026-10-06
+Estado: adoptado.
+El primer flujo de Sale crea atómicamente Sale + SaleLine + Invoice interna + Payment(s).
+La suma aplicada de pagos debe igualar exactamente el total de la venta. Sobrepago/cambio en efectivo y cuentas por cobrar
+se modelarán explícitamente después; no se infieren en esta fase.
+
+POST /api/sales requiere Idempotency-Key. La clave es única por Business para evitar duplicados ante retries de POS/offline.
+Owner, Administrator y Cashier pueden vender; InventoryManager no puede confirmar ventas.
+
+La Invoice creada en esta fase es interna y no es NCF/e-CF. La emisión fiscal continúa aislada en ElectronicInvoicing.
