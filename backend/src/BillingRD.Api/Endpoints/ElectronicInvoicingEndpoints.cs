@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using BillingRD.Api.Security;
+using BillingRD.Domain.Adjustments;
 using BillingRD.Domain.ElectronicInvoicing;
 using BillingRD.Domain.Identity;
 using BillingRD.Infrastructure.Persistence;
@@ -93,7 +94,7 @@ public static class ElectronicInvoicingEndpoints
         if (adjustment is null)
             return Results.NotFound();
 
-        if (adjustment.Kind != Domain.Adjustments.AdjustmentKind.Credit)
+        if (adjustment.Kind != AdjustmentKind.Credit)
             return Results.Conflict(new { message = "Only credit adjustments are supported by this e-CF draft flow." });
 
         var sourceReturnExists = await dbContext.Returns
