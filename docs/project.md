@@ -16,7 +16,8 @@
 - Inventario: stock por sucursal con balances + movimientos auditables; stock negativo deshabilitado en el MVP.
 - Caja: múltiples CashRegister por sucursal, una sesión abierta por caja, movimientos auditables y conciliación esperado/contado.
 - Devoluciones: parciales/totales contra snapshots de venta, con reposición de inventario y reembolso trazable por método.
-- e-CF/DGII será un módulo aislado de la factura interna.
+- Ajustes: cada devolución genera un AdjustmentDocument interno; ElectronicInvoicing puede preparar un borrador fiscal separado.
+- e-CF/DGII es un módulo aislado de la factura/ajuste interno; hoy solo existe preparación de borrador tipo 34, no emisión.
 - Desktop debe poder evolucionar a offline con sincronización segura.
 
 ## Principios
