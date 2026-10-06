@@ -120,6 +120,62 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.ToTable("users");
         });
 
+        modelBuilder.Entity("BillingRD.Domain.Cash.CashMovement", b =>
+        {
+            b.Property<Guid>("Id").ValueGeneratedNever().HasColumnType("uuid");
+            b.Property<decimal>("Amount").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.Property<Guid>("BusinessId").HasColumnType("uuid");
+            b.Property<Guid>("CashSessionId").HasColumnType("uuid");
+            b.Property<DateTimeOffset>("CreatedAtUtc").HasColumnType("timestamp with time zone");
+            b.Property<Guid>("CreatedByUserId").HasColumnType("uuid");
+            b.Property<Guid?>("PaymentId").HasColumnType("uuid");
+            b.Property<string>("Reason").HasMaxLength(240).HasColumnType("character varying(240)");
+            b.Property<Guid?>("SaleId").HasColumnType("uuid");
+            b.Property<string>("Type").IsRequired().HasMaxLength(32).HasColumnType("character varying(32)");
+            b.HasKey("Id");
+            b.HasIndex("BusinessId");
+            b.HasIndex("CreatedByUserId");
+            b.HasIndex("SaleId");
+            b.HasIndex("CashSessionId", "CreatedAtUtc");
+            b.HasIndex("PaymentId").IsUnique().HasFilter(@"""PaymentId"" IS NOT NULL");
+            b.ToTable("cash_movements");
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.Cash.CashRegister", b =>
+        {
+            b.Property<Guid>("Id").ValueGeneratedNever().HasColumnType("uuid");
+            b.Property<Guid>("BranchId").HasColumnType("uuid");
+            b.Property<Guid>("BusinessId").HasColumnType("uuid");
+            b.Property<DateTimeOffset>("CreatedAtUtc").HasColumnType("timestamp with time zone");
+            b.Property<bool>("IsActive").HasColumnType("boolean");
+            b.Property<string>("Name").IsRequired().HasMaxLength(120).HasColumnType("character varying(120)");
+            b.HasKey("Id");
+            b.HasIndex("BranchId");
+            b.HasIndex("BusinessId", "BranchId", "Name").IsUnique();
+            b.ToTable("cash_registers");
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.Cash.CashSession", b =>
+        {
+            b.Property<Guid>("Id").ValueGeneratedNever().HasColumnType("uuid");
+            b.Property<Guid>("BusinessId").HasColumnType("uuid");
+            b.Property<Guid>("CashRegisterId").HasColumnType("uuid");
+            b.Property<Guid?>("ClosedByUserId").HasColumnType("uuid");
+            b.Property<DateTimeOffset?>("ClosedAtUtc").HasColumnType("timestamp with time zone");
+            b.Property<decimal?>("CountedCash").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.Property<decimal?>("Difference").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.Property<decimal?>("ExpectedCashAtClose").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.Property<decimal>("OpeningBalance").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.Property<DateTimeOffset>("OpenedAtUtc").HasColumnType("timestamp with time zone");
+            b.Property<Guid>("OpenedByUserId").HasColumnType("uuid");
+            b.HasKey("Id");
+            b.HasIndex("BusinessId");
+            b.HasIndex("ClosedByUserId");
+            b.HasIndex("OpenedByUserId");
+            b.HasIndex("CashRegisterId").IsUnique().HasFilter(@"""ClosedAtUtc"" IS NULL");
+            b.ToTable("cash_sessions");
+        });
+
         modelBuilder.Entity("BillingRD.Domain.Inventory.StockBalance", b =>
         {
             b.Property<Guid>("Id").ValueGeneratedNever().HasColumnType("uuid");
@@ -273,6 +329,78 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
                 .WithMany()
                 .HasForeignKey("UserId")
                 .OnDelete(DeleteBehavior.Cascade)
+                .IsRequired();
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.Cash.CashMovement", b =>
+        {
+            b.HasOne("BillingRD.Domain.Businesses.Business", null)
+                .WithMany()
+                .HasForeignKey("BusinessId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Cash.CashSession", null)
+                .WithMany()
+                .HasForeignKey("CashSessionId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Identity.UserAccount", null)
+                .WithMany()
+                .HasForeignKey("CreatedByUserId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Payments.Payment", null)
+                .WithMany()
+                .HasForeignKey("PaymentId")
+                .OnDelete(DeleteBehavior.Restrict);
+
+            b.HasOne("BillingRD.Domain.Sales.Sale", null)
+                .WithMany()
+                .HasForeignKey("SaleId")
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.Cash.CashRegister", b =>
+        {
+            b.HasOne("BillingRD.Domain.Businesses.Branch", null)
+                .WithMany()
+                .HasForeignKey("BranchId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Businesses.Business", null)
+                .WithMany()
+                .HasForeignKey("BusinessId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.Cash.CashSession", b =>
+        {
+            b.HasOne("BillingRD.Domain.Businesses.Business", null)
+                .WithMany()
+                .HasForeignKey("BusinessId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Cash.CashRegister", null)
+                .WithMany()
+                .HasForeignKey("CashRegisterId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Identity.UserAccount", null)
+                .WithMany()
+                .HasForeignKey("ClosedByUserId")
+                .OnDelete(DeleteBehavior.Restrict);
+
+            b.HasOne("BillingRD.Domain.Identity.UserAccount", null)
+                .WithMany()
+                .HasForeignKey("OpenedByUserId")
+                .OnDelete(DeleteBehavior.Restrict)
                 .IsRequired();
         });
 
