@@ -299,6 +299,10 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
                 .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
 
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.Sales.Sale", b =>
+        {
             b.Navigation("Lines");
         });
     }
