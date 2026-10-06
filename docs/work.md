@@ -16,17 +16,23 @@ Estados: definido, en curso, pendiente de decisión, implementado, verificado, p
 | AUTH-01 | Registro/login/logout con cookie HttpOnly y password hashing | verificado | PR #4 + CI #37129390754 |
 | AUTH-02 | Selección de negocio validada contra BusinessMembership | verificado | HTTP integration test de acceso cruzado |
 | API-01 | Business/Product/Customer API autenticada | verificado | HTTP integration test contra PostgreSQL |
-| MVP-01 | Negocio → producto → cliente → venta → factura → pago | en curso | negocio/producto/cliente API lista; venta pendiente |
+| TAX-01 | ITBIS 0/16/18 + redondeo/snapshot por línea | implementado | ADR-010 + rama sales-invoice-payment |
+| SALE-01 | Sale/SaleLine + idempotencia + autorización | implementado | pendiente CI |
+| INV-01 | Invoice interna 1:1 con Sale | implementado | pendiente CI |
+| PAY-01 | Pagos múltiples que cuadran exactamente con Sale.Total | implementado | pendiente CI |
+| MVP-01 | Negocio → producto → cliente → venta → factura → pago | en curso | flujo transaccional implementado; pendiente CI |
 | DGII-01 | Integración fiscal desde fuente oficial vigente | definido | sin implementación |
 | OFF-01 | Preparación arquitectónica para offline | definido | ADR-005 |
 
 ## Handoff activo
-Autenticación y catálogo base verificados. Siguiente slice:
-Sale → SaleLine → Invoice → Payment, definiendo antes reglas de impuestos/redondeo del MVP.
+Validar el flujo Sale → SaleLine → Invoice → Payment contra PostgreSQL real.
+Si CI queda verde, cerrar PR y continuar con inventario/movimientos y caja antes de integrar e-CF.
 
 Decisiones ya resueltas:
 - Business como frontera principal y Branch como hijo;
 - autorización mediante BusinessMembership/BusinessRole;
 - EF Core 10 + Npgsql;
 - cookie HttpOnly same-site para autenticación del MVP;
-- BusinessId activo revalidado contra membership en cada request.
+- BusinessId activo revalidado contra membership en cada request;
+- ITBIS 0/16/18, precio MVP antes de impuesto y snapshot fiscal por línea;
+- venta confirmada totalmente pagada e idempotente en esta primera fase.
