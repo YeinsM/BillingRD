@@ -296,6 +296,49 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.ToTable("returns");
         });
 
+        modelBuilder.Entity("BillingRD.Domain.Adjustments.AdjustmentDocument", b =>
+        {
+            b.Property<Guid>("Id").ValueGeneratedNever().HasColumnType("uuid");
+            b.Property<Guid>("BusinessId").HasColumnType("uuid");
+            b.Property<DateTimeOffset>("CreatedAtUtc").HasColumnType("timestamp with time zone");
+            b.Property<Guid>("CreatedByUserId").HasColumnType("uuid");
+            b.Property<string>("Kind").IsRequired().HasMaxLength(24).HasColumnType("character varying(24)");
+            b.Property<string>("Reason").IsRequired().HasMaxLength(240).HasColumnType("character varying(240)");
+            b.Property<Guid>("ReturnId").HasColumnType("uuid");
+            b.Property<Guid>("SaleId").HasColumnType("uuid");
+            b.Property<decimal>("Subtotal").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.Property<decimal>("TaxAmount").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.Property<decimal>("Total").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.HasKey("Id");
+            b.HasIndex("BusinessId");
+            b.HasIndex("CreatedByUserId");
+            b.HasIndex("ReturnId").IsUnique();
+            b.HasIndex("SaleId");
+            b.ToTable("adjustment_documents");
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.ElectronicInvoicing.ElectronicFiscalDocumentDraft", b =>
+        {
+            b.Property<Guid>("Id").ValueGeneratedNever().HasColumnType("uuid");
+            b.Property<Guid>("AdjustmentDocumentId").HasColumnType("uuid");
+            b.Property<Guid>("BusinessId").HasColumnType("uuid");
+            b.Property<DateTimeOffset>("CreatedAtUtc").HasColumnType("timestamp with time zone");
+            b.Property<Guid>("CreatedByUserId").HasColumnType("uuid");
+            b.Property<Guid>("ReturnId").HasColumnType("uuid");
+            b.Property<Guid>("SaleId").HasColumnType("uuid");
+            b.Property<decimal>("Subtotal").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.Property<decimal>("TaxAmount").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.Property<decimal>("Total").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.Property<int>("Type").HasColumnType("integer");
+            b.HasKey("Id");
+            b.HasIndex("AdjustmentDocumentId").IsUnique();
+            b.HasIndex("BusinessId");
+            b.HasIndex("CreatedByUserId");
+            b.HasIndex("ReturnId").IsUnique();
+            b.HasIndex("SaleId");
+            b.ToTable("electronic_fiscal_document_drafts");
+        });
+
         modelBuilder.Entity("BillingRD.Domain.Sales.Sale", b =>
         {
             b.Property<Guid>("Id").ValueGeneratedNever().HasColumnType("uuid");
@@ -621,6 +664,66 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.HasOne("BillingRD.Domain.Identity.UserAccount", null)
                 .WithMany()
                 .HasForeignKey("CreatedByUserId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Sales.Sale", null)
+                .WithMany()
+                .HasForeignKey("SaleId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.Adjustments.AdjustmentDocument", b =>
+        {
+            b.HasOne("BillingRD.Domain.Businesses.Business", null)
+                .WithMany()
+                .HasForeignKey("BusinessId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Identity.UserAccount", null)
+                .WithMany()
+                .HasForeignKey("CreatedByUserId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Returns.SalesReturn", null)
+                .WithMany()
+                .HasForeignKey("ReturnId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Sales.Sale", null)
+                .WithMany()
+                .HasForeignKey("SaleId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.ElectronicInvoicing.ElectronicFiscalDocumentDraft", b =>
+        {
+            b.HasOne("BillingRD.Domain.Adjustments.AdjustmentDocument", null)
+                .WithMany()
+                .HasForeignKey("AdjustmentDocumentId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Businesses.Business", null)
+                .WithMany()
+                .HasForeignKey("BusinessId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Identity.UserAccount", null)
+                .WithMany()
+                .HasForeignKey("CreatedByUserId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.Returns.SalesReturn", null)
+                .WithMany()
+                .HasForeignKey("ReturnId")
                 .OnDelete(DeleteBehavior.Restrict)
                 .IsRequired();
 
