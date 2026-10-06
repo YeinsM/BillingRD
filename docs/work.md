@@ -29,7 +29,10 @@ Estados: definido, en curso, pendiente de decisión, implementado, verificado, p
 | RET-01 | Devolución parcial/total sin exceder cantidad vendida | verificado | PR #8 + CI #37481370309 |
 | RET-02 | Reposición de inventario + reembolso por método | verificado | ReturnFlowTests + PostgreSQL |
 | RET-03 | Cash refund en sesión abierta + idempotencia | verificado | ReturnFlowTests + CI #37481370309 |
-| DGII-01 | Integración fiscal desde fuente oficial vigente | definido | sin implementación |
+| ADJ-01 | Devolución crea AdjustmentDocument interno 1:1 | en curso | PR de ajustes/e-CF pendiente de CI |
+| ECF-01 | Catálogo oficial de tipos e-CF + draft tipo 34 | en curso | sin emisión; PR pendiente de CI |
+| ECF-02 | Draft fiscal 1:1, sin e-NCF/XML/firma/envío | en curso | integration test pendiente de CI |
+| DGII-01 | Integración fiscal desde fuente oficial vigente | definido | solo base arquitectónica implementada |
 | OFF-01 | Preparación arquitectónica para offline | definido | ADR-005 |
 
 ## Handoff activo
@@ -41,10 +44,12 @@ Caja / cash register verificada.
 
 Devoluciones y reembolsos verificados.
 
-Siguiente slice recomendado:
-1. notas internas / motivo y estado comercial de ajustes;
-2. preparar formalmente ElectronicInvoicing/e-CF y notas de crédito;
-3. definir el primer flujo offline de desktop.
+Slice actual: ajustes internos + base de ElectronicInvoicing.
+
+Siguiente slice recomendado una vez verificado:
+1. definir alcance fiscal MVP (D07): priorizar 31/32 y condiciones de emisor/receptor;
+2. modelar configuración fiscal del Business y datos tributarios necesarios;
+3. después implementar generación XML oficial, firma y transporte DGII; o avanzar primero con offline desktop si D07 sigue pendiente.
 
 Decisiones ya resueltas:
 - Business como frontera principal y Branch como hijo;
