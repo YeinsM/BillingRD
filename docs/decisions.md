@@ -139,3 +139,25 @@ devoluciones. Esta entidad es interna y no constituye todavía una nota de créd
 
 Motivo: la devolución debe revertir de forma atómica inventario y dinero sin reescribir la venta original, preservando
 auditoría y dejando la futura nota de crédito DGII como adaptación fiscal separada.
+
+
+## ADR-015 — Ajuste interno separado de borrador e-CF — 2026-10-06
+Estado: adoptado.
+Cada SalesReturn crea atómicamente un AdjustmentDocument interno de tipo Credit. Este documento representa el ajuste
+comercial y contable interno; no es un NCF/e-CF, no tiene e-NCF, XML firmado, track id ni estado de aceptación DGII.
+
+ElectronicInvoicing mantiene una segunda entidad separada: ElectronicFiscalDocumentDraft. El flujo implementado en
+esta fase permite crear exactamente un borrador fiscal por AdjustmentDocument y, para devoluciones, lo clasifica como
+e-CF tipo 34 (Nota de Crédito Electrónica). La creación del borrador es idempotente por constraint 1:1.
+
+Los tipos e-CF reconocidos en EcfType se basan en documentación oficial DGII vigente consultada el 2026-10-06:
+31 Crédito Fiscal, 32 Consumo, 33 Nota de Débito, 34 Nota de Crédito, 41 Compras, 43 Gastos Menores,
+44 Regímenes Especiales, 45 Gubernamental, 46 Exportaciones y 47 Pagos al Exterior.
+
+Esta fase NO implementa emisión fiscal. Queda expresamente fuera: asignación de e-NCF, generación del XML oficial,
+firma digital, certificado, autenticación/servicios DGII, envío, track id, aceptación/rechazo y contingencia.
+Esos estados solo podrán incorporarse después de validar la especificación técnica oficial aplicable y el estado de
+autorización fiscal del contribuyente.
+
+Motivo: separar operación comercial, documento interno y artefacto fiscal evita que el dominio central dependa de
+protocolos DGII y evita marcar como fiscalmente emitido algo que solo fue preparado localmente.

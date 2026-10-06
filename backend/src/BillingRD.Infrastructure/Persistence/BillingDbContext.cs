@@ -1,9 +1,11 @@
 using BillingRD.Application.Abstractions;
+using BillingRD.Domain.Adjustments;
 using BillingRD.Domain.Billing;
 using BillingRD.Domain.Businesses;
 using BillingRD.Domain.Catalog;
 using BillingRD.Domain.Cash;
 using BillingRD.Domain.Customers;
+using BillingRD.Domain.ElectronicInvoicing;
 using BillingRD.Domain.Identity;
 using BillingRD.Domain.Inventory;
 using BillingRD.Domain.Payments;
@@ -37,6 +39,8 @@ public sealed class BillingDbContext(
     public DbSet<SalesReturn> Returns => Set<SalesReturn>();
     public DbSet<ReturnLine> ReturnLines => Set<ReturnLine>();
     public DbSet<Refund> Refunds => Set<Refund>();
+    public DbSet<AdjustmentDocument> AdjustmentDocuments => Set<AdjustmentDocument>();
+    public DbSet<ElectronicFiscalDocumentDraft> ElectronicFiscalDocumentDrafts => Set<ElectronicFiscalDocumentDraft>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -58,5 +62,7 @@ public sealed class BillingDbContext(
         modelBuilder.Entity<SalesReturn>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
         modelBuilder.Entity<ReturnLine>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
         modelBuilder.Entity<Refund>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
+        modelBuilder.Entity<AdjustmentDocument>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
+        modelBuilder.Entity<ElectronicFiscalDocumentDraft>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
     }
 }
