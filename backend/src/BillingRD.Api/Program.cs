@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using BillingRD.Api.Endpoints;
 using BillingRD.Api.Security;
@@ -11,6 +12,8 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddProblemDetails();
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -23,7 +26,6 @@ builder.Services
         options.SlidingExpiration = true;
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
 
-        // APIs return status codes instead of browser redirects.
         options.Events.OnRedirectToLogin = context =>
         {
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
@@ -92,6 +94,7 @@ app.MapAuthEndpoints();
 app.MapBusinessEndpoints();
 app.MapProductEndpoints();
 app.MapCustomerEndpoints();
+app.MapSaleEndpoints();
 
 app.Run();
 

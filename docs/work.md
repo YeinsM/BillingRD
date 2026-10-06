@@ -16,17 +16,27 @@ Estados: definido, en curso, pendiente de decisión, implementado, verificado, p
 | AUTH-01 | Registro/login/logout con cookie HttpOnly y password hashing | verificado | PR #4 + CI #37129390754 |
 | AUTH-02 | Selección de negocio validada contra BusinessMembership | verificado | HTTP integration test de acceso cruzado |
 | API-01 | Business/Product/Customer API autenticada | verificado | HTTP integration test contra PostgreSQL |
-| MVP-01 | Negocio → producto → cliente → venta → factura → pago | en curso | negocio/producto/cliente API lista; venta pendiente |
+| TAX-01 | Exento + ITBIS 0/16/18 + redondeo/snapshot por línea | verificado | PR #5 + CI #37466043222 |
+| SALE-01 | Sale/SaleLine + idempotencia + autorización | verificado | PostgreSQL/HTTP integration tests |
+| INV-01 | Invoice interna 1:1 con Sale | verificado | PostgreSQL/HTTP integration tests |
+| PAY-01 | Pagos múltiples que cuadran exactamente con Sale.Total | verificado | PostgreSQL/HTTP integration tests |
+| MVP-01 | Negocio → producto → cliente → venta → factura → pago | verificado | PR #5 + CI #37466043222 |
 | DGII-01 | Integración fiscal desde fuente oficial vigente | definido | sin implementación |
 | OFF-01 | Preparación arquitectónica para offline | definido | ADR-005 |
 
 ## Handoff activo
-Autenticación y catálogo base verificados. Siguiente slice:
-Sale → SaleLine → Invoice → Payment, definiendo antes reglas de impuestos/redondeo del MVP.
+Primer vertical slice comercial completo y verificado: negocio → producto → cliente → venta → factura interna → pago.
+
+Siguiente slice recomendado:
+1. movimientos de inventario por sucursal ligados a venta/ajuste/devolución;
+2. caja: apertura, movimientos, cobros y cierre;
+3. luego devoluciones/notas internas y preparación formal de ElectronicInvoicing/e-CF.
 
 Decisiones ya resueltas:
 - Business como frontera principal y Branch como hijo;
 - autorización mediante BusinessMembership/BusinessRole;
 - EF Core 10 + Npgsql;
 - cookie HttpOnly same-site para autenticación del MVP;
-- BusinessId activo revalidado contra membership en cada request.
+- BusinessId activo revalidado contra membership en cada request;
+- Exempt y ZeroRated separados, ITBIS 0/16/18, precio MVP antes de impuesto y snapshot fiscal por línea;
+- venta confirmada totalmente pagada e idempotente en esta primera fase.

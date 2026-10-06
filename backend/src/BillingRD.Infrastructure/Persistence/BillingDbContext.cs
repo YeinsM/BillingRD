@@ -1,20 +1,19 @@
 using BillingRD.Application.Abstractions;
+using BillingRD.Domain.Billing;
 using BillingRD.Domain.Businesses;
 using BillingRD.Domain.Catalog;
 using BillingRD.Domain.Customers;
 using BillingRD.Domain.Identity;
+using BillingRD.Domain.Payments;
+using BillingRD.Domain.Sales;
 using Microsoft.EntityFrameworkCore;
 
 namespace BillingRD.Infrastructure.Persistence;
 
-/// <summary>
-/// PostgreSQL unit of work for BillingRD. Business-scoped entities are filtered by the trusted current business context.
-/// </summary>
 public sealed class BillingDbContext(
     DbContextOptions<BillingDbContext> options,
     ICurrentBusinessContext currentBusinessContext) : DbContext(options)
 {
-    // Guid.Empty is never a valid Business id in the domain, so unresolved contexts safely match zero scoped rows.
     public Guid CurrentBusinessId => currentBusinessContext.BusinessId ?? Guid.Empty;
 
     public DbSet<Business> Businesses => Set<Business>();
@@ -23,15 +22,22 @@ public sealed class BillingDbContext(
     public DbSet<BusinessMembership> BusinessMemberships => Set<BusinessMembership>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<Sale> Sales => Set<Sale>();
+    public DbSet<SaleLine> SaleLines => Set<SaleLine>();
+    public DbSet<Invoice> Invoices => Set<Invoice>();
+    public DbSet<Payment> Payments => Set<Payment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BillingDbContext).Assembly);
 
-        // Fail closed: without a trusted business context, CurrentBusinessId is Guid.Empty and no scoped row can match.
-        modelBuilder.Entity<Branch>().HasQueryFilter(branch => branch.BusinessId == CurrentBusinessId);
-        modelBuilder.Entity<BusinessMembership>().HasQueryFilter(membership => membership.BusinessId == CurrentBusinessId);
-        modelBuilder.Entity<Product>().HasQueryFilter(product => product.BusinessId == CurrentBusinessId);
-        modelBuilder.Entity<Customer>().HasQueryFilter(customer => customer.BusinessId == CurrentBusinessId);
+        modelBuilder.Entity<Branch>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
+        modelBuilder.Entity<BusinessMembership>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
+        modelBuilder.Entity<Product>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
+        modelBuilder.Entity<Customer>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
+        modelBuilder.Entity<Sale>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
+        modelBuilder.Entity<SaleLine>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
+        modelBuilder.Entity<Invoice>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
+        modelBuilder.Entity<Payment>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
     }
 }
