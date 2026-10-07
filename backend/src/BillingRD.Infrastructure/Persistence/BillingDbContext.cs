@@ -22,6 +22,7 @@ public sealed class BillingDbContext(
     public Guid CurrentBusinessId => currentBusinessContext.BusinessId ?? Guid.Empty;
 
     public DbSet<Business> Businesses => Set<Business>();
+    public DbSet<BusinessFiscalProfile> BusinessFiscalProfiles => Set<BusinessFiscalProfile>();
     public DbSet<Branch> Branches => Set<Branch>();
     public DbSet<UserAccount> Users => Set<UserAccount>();
     public DbSet<BusinessMembership> BusinessMemberships => Set<BusinessMembership>();
@@ -46,6 +47,7 @@ public sealed class BillingDbContext(
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BillingDbContext).Assembly);
 
+        modelBuilder.Entity<BusinessFiscalProfile>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
         modelBuilder.Entity<Branch>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
         modelBuilder.Entity<BusinessMembership>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
         modelBuilder.Entity<Product>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);

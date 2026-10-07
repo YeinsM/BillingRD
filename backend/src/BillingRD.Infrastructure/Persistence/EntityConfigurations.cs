@@ -20,6 +20,22 @@ internal sealed class BusinessConfiguration : IEntityTypeConfiguration<Business>
     }
 }
 
+internal sealed class BusinessFiscalProfileConfiguration : IEntityTypeConfiguration<BusinessFiscalProfile>
+{
+    public void Configure(EntityTypeBuilder<BusinessFiscalProfile> builder)
+    {
+        builder.ToTable("business_fiscal_profiles");
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Rnc).HasMaxLength(11).IsRequired();
+        builder.Property(x => x.LegalName).HasMaxLength(150).IsRequired();
+        builder.Property(x => x.TradeName).HasMaxLength(150);
+        builder.Property(x => x.Address).HasMaxLength(100).IsRequired();
+        builder.HasIndex(x => x.BusinessId).IsUnique();
+        builder.HasIndex(x => x.Rnc).IsUnique();
+        builder.HasOne<Business>().WithOne().HasForeignKey<BusinessFiscalProfile>(x => x.BusinessId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
 internal sealed class BranchConfiguration : IEntityTypeConfiguration<Branch>
 {
     public void Configure(EntityTypeBuilder<Branch> builder)
@@ -82,7 +98,9 @@ internal sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         builder.ToTable("customers");
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Name).HasMaxLength(200).IsRequired();
-        builder.Property(x => x.TaxId).HasMaxLength(20);
+        builder.Property(x => x.TaxId).HasMaxLength(11);
+        builder.Property(x => x.ForeignIdentifier).HasMaxLength(20);
+        builder.Property(x => x.FiscalAddress).HasMaxLength(100);
         builder.Property(x => x.Email).HasMaxLength(320);
         builder.Property(x => x.Phone).HasMaxLength(40);
         builder.HasIndex(x => new { x.BusinessId, x.TaxId }).IsUnique().HasFilter(@"""TaxId"" IS NOT NULL");

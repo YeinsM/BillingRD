@@ -32,7 +32,10 @@ Estados: definido, en curso, pendiente de decisión, implementado, verificado, p
 | ADJ-01 | Devolución crea AdjustmentDocument interno 1:1 | verificado | PR #9 + CI #37496619541 |
 | ECF-01 | Catálogo oficial de tipos e-CF + draft tipo 34 | verificado | DGII + ElectronicInvoicingFoundationTests |
 | ECF-02 | Draft fiscal 1:1, sin e-NCF/XML/firma/envío | verificado | CI #37496619541 |
-| DGII-01 | Integración fiscal desde fuente oficial vigente | definido | solo base arquitectónica implementada |
+| FISC-01 | BusinessFiscalProfile + identidad fiscal Customer | verificado | PR #10 + CI #37617623620 |
+| ECF-03 | Draft e-CF 31 con comprador identificado | verificado | FiscalInvoiceDraftTests + PostgreSQL |
+| ECF-04 | Draft e-CF 32 + regla DOP 250,000 | verificado | CI #37617623620 |
+| DGII-01 | Integración fiscal desde fuente oficial vigente | definido | drafts 31/32/34; sin emisión |
 | OFF-01 | Preparación arquitectónica para offline | definido | ADR-005 |
 
 ## Handoff activo
@@ -46,10 +49,12 @@ Devoluciones y reembolsos verificados.
 
 Ajustes internos + base de ElectronicInvoicing verificados.
 
+Perfil fiscal + preparación e-CF 31/32 verificados.
+
 Siguiente slice recomendado:
-1. definir alcance fiscal MVP (D07): priorizar 31/32 y condiciones de emisor/receptor;
-2. modelar configuración fiscal del Business y datos tributarios necesarios;
-3. después implementar generación XML oficial, firma y transporte DGII; o avanzar primero con offline desktop si D07 sigue pendiente.
+1. modelar snapshot fiscal de líneas/encabezado necesario para XML 31/32;
+2. implementar generador XML contra XSD oficial y validación local, todavía sin envío;
+3. después abordar certificado/firma y servicios DGII, o priorizar offline desktop antes de credenciales fiscales reales.
 
 Decisiones ya resueltas:
 - Business como frontera principal y Branch como hijo;

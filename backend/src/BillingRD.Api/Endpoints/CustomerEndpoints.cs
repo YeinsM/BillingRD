@@ -13,6 +13,7 @@ public static class CustomerEndpoints
 
         group.MapGet("/", ListAsync);
         group.MapPost("/", CreateAsync);
+        group.MapPut("/{customerId:guid}/fiscal-identity", UpdateFiscalIdentityAsync);
 
         return endpoints;
     }
@@ -34,6 +35,8 @@ public static class CustomerEndpoints
                 customer.Id,
                 customer.Name,
                 customer.TaxId,
+                customer.ForeignIdentifier,
+                customer.FiscalAddress,
                 customer.Email,
                 customer.Phone,
                 customer.IsActive
@@ -62,16 +65,76 @@ public static class CustomerEndpoints
             });
         }
 
-        var customer = Customer.Create(currentBusiness.BusinessId.Value, request.Name);
+        Customer customer;
+        try
+        {
+            customer = Customer.Create(
+                currentBusiness.BusinessId.Value,
+                request.Name,
+                request.TaxId,
+                request.ForeignIdentifier,
+                request.FiscalAddress,
+                request.Email,
+                request.Phone);
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.ValidationProblem(new Dictionary<string, string[]> { ["customer"] = [ex.Message] });
+        }
+
         dbContext.Customers.Add(customer);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return Results.Created($"/api/customers/{customer.Id}", new
         {
             customer.Id,
-            customer.Name
+            customer.Name,
+            customer.TaxId,
+            customer.ForeignIdentifier,
+            customer.FiscalAddress,
+            customer.Email,
+            customer.Phone
         });
     }
 
-    public sealed record CreateCustomerRequest(string? Name);
+    private static async Task<IResult> UpdateFiscalIdentityAsync(
+        Guid customerId,
+        FiscalIdentityRequest request,
+        CurrentBusinessContext currentBusiness,
+        BillingDbContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        if (!currentBusiness.BusinessId.HasValue)
+            return Results.Conflict(new { message = "Select an active business first." });
+
+        var customer = await dbContext.Customers.SingleOrDefaultAsync(x => x.Id == customerId && x.IsActive, cancellationToken);
+        if (customer is null) return Results.NotFound();
+
+        try
+        {
+            customer.UpdateFiscalIdentity(request.TaxId, request.ForeignIdentifier, request.FiscalAddress, request.Email, request.Phone);
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.ValidationProblem(new Dictionary<string, string[]> { ["customer"] = [ex.Message] });
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return Results.Ok(new { customer.Id, customer.Name, customer.TaxId, customer.ForeignIdentifier, customer.FiscalAddress, customer.Email, customer.Phone });
+    }
+
+    public sealed record CreateCustomerRequest(
+        string? Name,
+        string? TaxId = null,
+        string? ForeignIdentifier = null,
+        string? FiscalAddress = null,
+        string? Email = null,
+        string? Phone = null);
+
+    public sealed record FiscalIdentityRequest(
+        string? TaxId,
+        string? ForeignIdentifier,
+        string? FiscalAddress,
+        string? Email,
+        string? Phone);
 }
