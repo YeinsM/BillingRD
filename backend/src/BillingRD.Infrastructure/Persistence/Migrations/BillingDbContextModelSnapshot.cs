@@ -44,7 +44,7 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.Property<bool>("IsActive").HasColumnType("boolean");
             b.Property<string>("LegalName").HasMaxLength(200).HasColumnType("character varying(200)");
             b.Property<string>("Name").IsRequired().HasMaxLength(160).HasColumnType("character varying(160)");
-            b.Property<string>("TaxId").HasMaxLength(11).HasColumnType("character varying(11)");
+            b.Property<string>("TaxId").HasMaxLength(20).HasColumnType("character varying(20)");
             b.HasKey("Id");
             b.HasIndex("TaxId").IsUnique().HasFilter(@"""TaxId"" IS NOT NULL");
             b.ToTable("businesses");
@@ -107,7 +107,7 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.Property<bool>("IsActive").HasColumnType("boolean");
             b.Property<string>("Name").IsRequired().HasMaxLength(200).HasColumnType("character varying(200)");
             b.Property<string>("Phone").HasMaxLength(40).HasColumnType("character varying(40)");
-            b.Property<string>("TaxId").HasMaxLength(20).HasColumnType("character varying(20)");
+            b.Property<string>("TaxId").HasMaxLength(11).HasColumnType("character varying(11)");
             b.HasKey("Id");
             b.HasIndex("BusinessId", "TaxId").IsUnique().HasFilter(@"""TaxId"" IS NOT NULL");
             b.ToTable("customers");
