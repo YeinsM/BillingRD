@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using BillingRD.Api.Security;
 using BillingRD.Domain.Adjustments;
+using BillingRD.Domain.Customers;
 using BillingRD.Domain.ElectronicInvoicing;
 using BillingRD.Domain.Identity;
 using BillingRD.Infrastructure.Persistence;
@@ -16,6 +17,7 @@ public static class ElectronicInvoicingEndpoints
         adjustments.MapGet("/{adjustmentId:guid}", GetAdjustmentAsync);
 
         var drafts = endpoints.MapGroup("/api/electronic-invoicing/drafts").RequireAuthorization();
+        drafts.MapPost("/invoice/{invoiceId:guid}", CreateInvoiceDraftAsync);
         drafts.MapPost("/credit-note/from-adjustment/{adjustmentId:guid}", CreateCreditNoteDraftAsync);
         drafts.MapGet("/{draftId:guid}", GetDraftAsync);
 
@@ -58,6 +60,128 @@ public static class ElectronicInvoicingEndpoints
         });
     }
 
+    private static async Task<IResult> CreateInvoiceDraftAsync(
+        Guid invoiceId,
+        CreateInvoiceDraftRequest request,
+        HttpContext httpContext,
+        CurrentBusinessContext currentBusiness,
+        BillingDbContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        if (!currentBusiness.BusinessId.HasValue)
+            return Results.Conflict(new { message = "Select an active business before preparing an e-CF draft." });
+
+        if (!Guid.TryParse(httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            return Results.Unauthorized();
+
+        if (!await CanPrepareFiscalDraftAsync(dbContext, currentBusiness.BusinessId.Value, userId, cancellationToken))
+            return Results.Forbid();
+
+        if (request.Type is not (EcfType.CreditFiscalInvoice31 or EcfType.ConsumerInvoice32))
+        {
+            return Results.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["type"] = ["Only CreditFiscalInvoice31 or ConsumerInvoice32 can be prepared from an internal invoice."]
+            });
+        }
+
+        var existing = await dbContext.ElectronicFiscalDocumentDrafts
+            .AsNoTracking()
+            .SingleOrDefaultAsync(x => x.InvoiceId == invoiceId, cancellationToken);
+
+        if (existing is not null)
+        {
+            if (existing.Type != request.Type)
+                return Results.Conflict(new { message = "This invoice already has a fiscal draft of another type." });
+
+            return BuildDraftResult(existing, StatusCodes.Status200OK);
+        }
+
+        var invoice = await dbContext.Invoices
+            .AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == invoiceId, cancellationToken);
+
+        if (invoice is null)
+            return Results.NotFound();
+
+        var sale = await dbContext.Sales
+            .AsNoTracking()
+            .SingleAsync(x => x.Id == invoice.SaleId, cancellationToken);
+
+        var issuer = await dbContext.BusinessFiscalProfiles
+            .AsNoTracking()
+            .SingleOrDefaultAsync(x => x.BusinessId == currentBusiness.BusinessId.Value, cancellationToken);
+
+        if (issuer is null)
+        {
+            return Results.Conflict(new
+            {
+                message = "Configure the business fiscal profile before preparing e-CF drafts."
+            });
+        }
+
+        Customer? buyer = null;
+        if (invoice.CustomerId.HasValue)
+        {
+            buyer = await dbContext.Customers
+                .AsNoTracking()
+                .SingleOrDefaultAsync(x => x.Id == invoice.CustomerId.Value && x.IsActive, cancellationToken);
+
+            if (buyer is null)
+                return Results.Conflict(new { message = "The invoice customer is not available." });
+        }
+
+        ElectronicFiscalDocumentDraft draft;
+        try
+        {
+            draft = ElectronicFiscalDocumentDraft.InvoiceFromSale(
+                currentBusiness.BusinessId.Value,
+                invoice.Id,
+                sale.Id,
+                invoice.CustomerId,
+                userId,
+                request.Type,
+                issuer,
+                buyer,
+                invoice.Subtotal,
+                invoice.TaxAmount,
+                invoice.Total);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.Conflict(new { message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.ValidationProblem(new Dictionary<string, string[]> { ["draft"] = [ex.Message] });
+        }
+
+        dbContext.ElectronicFiscalDocumentDrafts.Add(draft);
+
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            dbContext.ChangeTracker.Clear();
+
+            var concurrent = await dbContext.ElectronicFiscalDocumentDrafts
+                .AsNoTracking()
+                .SingleOrDefaultAsync(x => x.InvoiceId == invoiceId, cancellationToken);
+
+            if (concurrent is null)
+                throw;
+
+            if (concurrent.Type != request.Type)
+                return Results.Conflict(new { message = "This invoice already has a fiscal draft of another type." });
+
+            return BuildDraftResult(concurrent, StatusCodes.Status200OK);
+        }
+
+        return BuildDraftResult(draft, StatusCodes.Status201Created);
+    }
+
     private static async Task<IResult> CreateCreditNoteDraftAsync(
         Guid adjustmentId,
         HttpContext httpContext,
@@ -71,13 +195,7 @@ public static class ElectronicInvoicingEndpoints
         if (!Guid.TryParse(httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
             return Results.Unauthorized();
 
-        var role = await dbContext.BusinessMemberships
-            .IgnoreQueryFilters()
-            .Where(x => x.BusinessId == currentBusiness.BusinessId.Value && x.UserId == userId)
-            .Select(x => x.Role)
-            .SingleOrDefaultAsync(cancellationToken);
-
-        if (role is not (BusinessRole.Owner or BusinessRole.Administrator))
+        if (!await CanPrepareFiscalDraftAsync(dbContext, currentBusiness.BusinessId.Value, userId, cancellationToken))
             return Results.Forbid();
 
         var existing = await dbContext.ElectronicFiscalDocumentDrafts
@@ -154,15 +272,42 @@ public static class ElectronicInvoicingEndpoints
             : BuildDraftResult(draft, StatusCodes.Status200OK);
     }
 
+    private static Task<bool> CanPrepareFiscalDraftAsync(
+        BillingDbContext dbContext,
+        Guid businessId,
+        Guid userId,
+        CancellationToken cancellationToken) =>
+        dbContext.BusinessMemberships
+            .IgnoreQueryFilters()
+            .Where(x => x.BusinessId == businessId && x.UserId == userId)
+            .Select(x => x.Role)
+            .AnyAsync(role => role == BusinessRole.Owner || role == BusinessRole.Administrator, cancellationToken);
+
     private static IResult BuildDraftResult(ElectronicFiscalDocumentDraft draft, int statusCode) =>
         Results.Json(new
         {
             draft.Id,
+            draft.InvoiceId,
             draft.AdjustmentDocumentId,
             draft.SaleId,
             draft.ReturnId,
+            draft.CustomerId,
             ecfType = (int)draft.Type,
             ecfTypeName = draft.Type.ToString(),
+            issuer = new
+            {
+                rnc = draft.IssuerRnc,
+                legalName = draft.IssuerLegalName,
+                tradeName = draft.IssuerTradeName,
+                address = draft.IssuerAddress
+            },
+            buyer = new
+            {
+                taxId = draft.BuyerTaxId,
+                foreignIdentifier = draft.BuyerForeignIdentifier,
+                name = draft.BuyerName,
+                address = draft.BuyerAddress
+            },
             draft.Subtotal,
             draft.TaxAmount,
             draft.Total,
@@ -173,4 +318,6 @@ public static class ElectronicInvoicingEndpoints
             digitallySigned = false,
             submittedToDgii = false
         }, statusCode: statusCode);
+
+    public sealed record CreateInvoiceDraftRequest(EcfType Type);
 }
