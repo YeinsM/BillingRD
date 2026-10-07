@@ -92,6 +92,7 @@ app.MapGet("/ready", async (BillingDbContext dbContext, CancellationToken cancel
 
 app.MapAuthEndpoints();
 app.MapBusinessEndpoints();
+app.MapFiscalProfileEndpoints();
 app.MapProductEndpoints();
 app.MapCustomerEndpoints();
 app.MapSaleEndpoints();
