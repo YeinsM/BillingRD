@@ -44,10 +44,26 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.Property<bool>("IsActive").HasColumnType("boolean");
             b.Property<string>("LegalName").HasMaxLength(200).HasColumnType("character varying(200)");
             b.Property<string>("Name").IsRequired().HasMaxLength(160).HasColumnType("character varying(160)");
-            b.Property<string>("TaxId").HasMaxLength(20).HasColumnType("character varying(20)");
+            b.Property<string>("TaxId").HasMaxLength(11).HasColumnType("character varying(11)");
             b.HasKey("Id");
             b.HasIndex("TaxId").IsUnique().HasFilter(@"""TaxId"" IS NOT NULL");
             b.ToTable("businesses");
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.Businesses.BusinessFiscalProfile", b =>
+        {
+            b.Property<Guid>("Id").ValueGeneratedNever().HasColumnType("uuid");
+            b.Property<string>("Address").IsRequired().HasMaxLength(100).HasColumnType("character varying(100)");
+            b.Property<Guid>("BusinessId").HasColumnType("uuid");
+            b.Property<DateTimeOffset>("CreatedAtUtc").HasColumnType("timestamp with time zone");
+            b.Property<string>("LegalName").IsRequired().HasMaxLength(150).HasColumnType("character varying(150)");
+            b.Property<string>("Rnc").IsRequired().HasMaxLength(11).HasColumnType("character varying(11)");
+            b.Property<string>("TradeName").HasMaxLength(150).HasColumnType("character varying(150)");
+            b.Property<DateTimeOffset>("UpdatedAtUtc").HasColumnType("timestamp with time zone");
+            b.HasKey("Id");
+            b.HasIndex("BusinessId").IsUnique();
+            b.HasIndex("Rnc").IsUnique();
+            b.ToTable("business_fiscal_profiles");
         });
 
         modelBuilder.Entity("BillingRD.Domain.Businesses.Branch", b =>
@@ -86,6 +102,8 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.Property<Guid>("BusinessId").HasColumnType("uuid");
             b.Property<DateTimeOffset>("CreatedAtUtc").HasColumnType("timestamp with time zone");
             b.Property<string>("Email").HasMaxLength(320).HasColumnType("character varying(320)");
+            b.Property<string>("FiscalAddress").HasMaxLength(100).HasColumnType("character varying(100)");
+            b.Property<string>("ForeignIdentifier").HasMaxLength(20).HasColumnType("character varying(20)");
             b.Property<bool>("IsActive").HasColumnType("boolean");
             b.Property<string>("Name").IsRequired().HasMaxLength(200).HasColumnType("character varying(200)");
             b.Property<string>("Phone").HasMaxLength(40).HasColumnType("character varying(40)");
@@ -320,21 +338,33 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
         modelBuilder.Entity("BillingRD.Domain.ElectronicInvoicing.ElectronicFiscalDocumentDraft", b =>
         {
             b.Property<Guid>("Id").ValueGeneratedNever().HasColumnType("uuid");
-            b.Property<Guid>("AdjustmentDocumentId").HasColumnType("uuid");
+            b.Property<Guid?>("AdjustmentDocumentId").HasColumnType("uuid");
+            b.Property<string>("BuyerAddress").HasMaxLength(100).HasColumnType("character varying(100)");
+            b.Property<string>("BuyerForeignIdentifier").HasMaxLength(20).HasColumnType("character varying(20)");
+            b.Property<string>("BuyerName").HasMaxLength(150).HasColumnType("character varying(150)");
+            b.Property<string>("BuyerTaxId").HasMaxLength(11).HasColumnType("character varying(11)");
             b.Property<Guid>("BusinessId").HasColumnType("uuid");
             b.Property<DateTimeOffset>("CreatedAtUtc").HasColumnType("timestamp with time zone");
             b.Property<Guid>("CreatedByUserId").HasColumnType("uuid");
-            b.Property<Guid>("ReturnId").HasColumnType("uuid");
+            b.Property<Guid?>("CustomerId").HasColumnType("uuid");
+            b.Property<Guid?>("InvoiceId").HasColumnType("uuid");
+            b.Property<string>("IssuerAddress").HasMaxLength(100).HasColumnType("character varying(100)");
+            b.Property<string>("IssuerLegalName").HasMaxLength(150).HasColumnType("character varying(150)");
+            b.Property<string>("IssuerRnc").HasMaxLength(11).HasColumnType("character varying(11)");
+            b.Property<string>("IssuerTradeName").HasMaxLength(150).HasColumnType("character varying(150)");
+            b.Property<Guid?>("ReturnId").HasColumnType("uuid");
             b.Property<Guid>("SaleId").HasColumnType("uuid");
             b.Property<decimal>("Subtotal").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
             b.Property<decimal>("TaxAmount").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
             b.Property<decimal>("Total").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
             b.Property<int>("Type").HasColumnType("integer");
             b.HasKey("Id");
-            b.HasIndex("AdjustmentDocumentId").IsUnique();
+            b.HasIndex("AdjustmentDocumentId").IsUnique().HasFilter(@"""AdjustmentDocumentId"" IS NOT NULL");
             b.HasIndex("BusinessId");
             b.HasIndex("CreatedByUserId");
-            b.HasIndex("ReturnId").IsUnique();
+            b.HasIndex("CustomerId");
+            b.HasIndex("InvoiceId").IsUnique().HasFilter(@"""InvoiceId"" IS NOT NULL");
+            b.HasIndex("ReturnId").IsUnique().HasFilter(@"""ReturnId"" IS NOT NULL");
             b.HasIndex("SaleId");
             b.ToTable("electronic_fiscal_document_drafts");
         });
@@ -407,6 +437,15 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
                 .WithMany()
                 .HasForeignKey("BusinessId")
                 .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.Businesses.BusinessFiscalProfile", b =>
+        {
+            b.HasOne("BillingRD.Domain.Businesses.Business", null)
+                .WithOne()
+                .HasForeignKey("BillingRD.Domain.Businesses.BusinessFiscalProfile", "BusinessId")
+                .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
         });
 
@@ -706,8 +745,7 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.HasOne("BillingRD.Domain.Adjustments.AdjustmentDocument", null)
                 .WithMany()
                 .HasForeignKey("AdjustmentDocumentId")
-                .OnDelete(DeleteBehavior.Restrict)
-                .IsRequired();
+                .OnDelete(DeleteBehavior.Restrict);
 
             b.HasOne("BillingRD.Domain.Businesses.Business", null)
                 .WithMany()
@@ -721,11 +759,20 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
                 .OnDelete(DeleteBehavior.Restrict)
                 .IsRequired();
 
+            b.HasOne("BillingRD.Domain.Customers.Customer", null)
+                .WithMany()
+                .HasForeignKey("CustomerId")
+                .OnDelete(DeleteBehavior.Restrict);
+
+            b.HasOne("BillingRD.Domain.Billing.Invoice", null)
+                .WithMany()
+                .HasForeignKey("InvoiceId")
+                .OnDelete(DeleteBehavior.Restrict);
+
             b.HasOne("BillingRD.Domain.Returns.SalesReturn", null)
                 .WithMany()
                 .HasForeignKey("ReturnId")
-                .OnDelete(DeleteBehavior.Restrict)
-                .IsRequired();
+                .OnDelete(DeleteBehavior.Restrict);
 
             b.HasOne("BillingRD.Domain.Sales.Sale", null)
                 .WithMany()
