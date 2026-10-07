@@ -17,6 +17,7 @@
 - Caja: múltiples CashRegister por sucursal, una sesión abierta por caja, movimientos auditables y conciliación esperado/contado.
 - Devoluciones: parciales/totales contra snapshots de venta, con reposición de inventario y reembolso trazable por método.
 - Ajustes: cada devolución genera un AdjustmentDocument interno; ElectronicInvoicing puede preparar un borrador fiscal separado.
+- Alcance fiscal MVP: drafts 31 (Crédito Fiscal), 32 (Consumo) y 34 (Nota de Crédito); emisión DGII aún no implementada.
 - e-CF/DGII es un módulo aislado de la factura/ajuste interno; hoy solo existe preparación de borrador tipo 34, no emisión.
 - Desktop debe poder evolucionar a offline con sincronización segura.
 
@@ -33,7 +34,6 @@
 | ID | Decisión | Afecta |
 |---|---|---|
 | D01 | Nombre comercial definitivo | branding |
-| D07 | Alcance fiscal MVP y comprobantes priorizados | DGII |
 | D08 | DB local desktop y primer flujo offline | sync |
 | D09 | Hardware POS objetivo | POS |
 | D10 | Hosting/storage/email/observabilidad | operaciones |
