@@ -32,9 +32,9 @@ Estados: definido, en curso, pendiente de decisión, implementado, verificado, p
 | ADJ-01 | Devolución crea AdjustmentDocument interno 1:1 | verificado | PR #9 + CI #37496619541 |
 | ECF-01 | Catálogo oficial de tipos e-CF + draft tipo 34 | verificado | DGII + ElectronicInvoicingFoundationTests |
 | ECF-02 | Draft fiscal 1:1, sin e-NCF/XML/firma/envío | verificado | CI #37496619541 |
-| FISC-01 | BusinessFiscalProfile + identidad fiscal Customer | en curso | PR fiscal 31/32 pendiente de CI |
-| ECF-03 | Draft e-CF 31 con comprador identificado | en curso | FiscalInvoiceDraftTests pendiente de CI |
-| ECF-04 | Draft e-CF 32 + regla DOP 250,000 | en curso | FiscalInvoiceDraftTests pendiente de CI |
+| FISC-01 | BusinessFiscalProfile + identidad fiscal Customer | verificado | PR #10 + CI #37617623620 |
+| ECF-03 | Draft e-CF 31 con comprador identificado | verificado | FiscalInvoiceDraftTests + PostgreSQL |
+| ECF-04 | Draft e-CF 32 + regla DOP 250,000 | verificado | CI #37617623620 |
 | DGII-01 | Integración fiscal desde fuente oficial vigente | definido | drafts 31/32/34; sin emisión |
 | OFF-01 | Preparación arquitectónica para offline | definido | ADR-005 |
 
@@ -49,9 +49,9 @@ Devoluciones y reembolsos verificados.
 
 Ajustes internos + base de ElectronicInvoicing verificados.
 
-Slice actual: perfil fiscal + preparación e-CF 31/32.
+Perfil fiscal + preparación e-CF 31/32 verificados.
 
-Siguiente slice recomendado una vez verificado:
+Siguiente slice recomendado:
 1. modelar snapshot fiscal de líneas/encabezado necesario para XML 31/32;
 2. implementar generador XML contra XSD oficial y validación local, todavía sin envío;
 3. después abordar certificado/firma y servicios DGII, o priorizar offline desktop antes de credenciales fiscales reales.
