@@ -161,3 +161,28 @@ autorización fiscal del contribuyente.
 
 Motivo: separar operación comercial, documento interno y artefacto fiscal evita que el dominio central dependa de
 protocolos DGII y evita marcar como fiscalmente emitido algo que solo fue preparado localmente.
+
+
+## ADR-016 — Alcance fiscal MVP: e-CF 31, 32 y 34 — 2026-10-07
+Estado: adoptado.
+El primer alcance fiscal comercial de BillingRD prioriza:
+- 31 Factura de Crédito Fiscal Electrónica para operaciones donde el comprador solicita sustentar gasto/costo o crédito fiscal;
+- 32 Factura de Consumo Electrónica para consumidores finales;
+- 34 Nota de Crédito Electrónica como adaptación fiscal futura de AdjustmentDocument/SalesReturn.
+
+La preparación de e-CF 31 exige Customer identificado con RNC/Cédula y nombre compatible con el formato e-CF.
+Para e-CF 32 se permite comprador anónimo por debajo de DOP 250,000. Desde DOP 250,000 inclusive, el draft exige
+identificación del comprador mediante RNC/Cédula o Identificador Extranjero y nombre/razón social.
+
+Todo draft 31/32 requiere BusinessFiscalProfile con RNC de 9/11 dígitos, razón social (máx. 150) y dirección fiscal
+(máx. 100). Estos datos son snapshots del futuro emisor/comprador; configurar el perfil NO demuestra que DGII haya
+autorizado al contribuyente como facturador electrónico.
+
+Los tipos 33, 41, 43, 44, 45, 46 y 47 permanecen reconocidos en EcfType pero fuera del MVP hasta existir un caso de
+negocio aprobado. La emisión sigue excluyendo e-NCF, XML, firma, transporte y respuesta DGII.
+
+Fuente de diseño: Formato Comprobante Fiscal Electrónico v1.0 de DGII (octubre 2025) y documentación técnica vigente
+consultada el 2026-10-07.
+
+Motivo: cubrir primero los comprobantes directamente asociados al flujo de venta minorista/B2B y sus devoluciones,
+sin convertir el catálogo completo de e-CF en alcance obligatorio.
