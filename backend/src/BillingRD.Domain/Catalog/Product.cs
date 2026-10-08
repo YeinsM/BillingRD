@@ -16,6 +16,7 @@ public sealed class Product
         string sku,
         decimal salePrice,
         ItbisCategory itbisCategory,
+        ProductKind kind,
         bool tracksInventory)
     {
         Id = id;
@@ -24,6 +25,7 @@ public sealed class Product
         Sku = sku;
         SalePrice = MoneyMath.RoundCurrency(salePrice);
         ItbisCategory = itbisCategory;
+        Kind = kind;
         TracksInventory = tracksInventory;
         CreatedAtUtc = DateTimeOffset.UtcNow;
         IsActive = true;
@@ -36,6 +38,7 @@ public sealed class Product
     public string? Barcode { get; private set; }
     public decimal SalePrice { get; private set; }
     public ItbisCategory ItbisCategory { get; private set; } = ItbisCategory.Standard;
+    public ProductKind Kind { get; private set; } = ProductKind.Unknown;
     public bool TracksInventory { get; private set; }
     public bool IsActive { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; private set; }
@@ -46,6 +49,7 @@ public sealed class Product
         string sku,
         decimal salePrice,
         ItbisCategory itbisCategory = ItbisCategory.Standard,
+        ProductKind kind = ProductKind.Unknown,
         bool tracksInventory = true)
     {
         if (businessId == Guid.Empty) throw new ArgumentException("Business id is required.", nameof(businessId));
@@ -53,6 +57,7 @@ public sealed class Product
         ArgumentException.ThrowIfNullOrWhiteSpace(sku);
         if (salePrice < 0) throw new ArgumentOutOfRangeException(nameof(salePrice));
         _ = itbisCategory.Rate();
+        if (!Enum.IsDefined(kind)) throw new ArgumentOutOfRangeException(nameof(kind));
 
         return new Product(
             Guid.CreateVersion7(),
@@ -61,6 +66,7 @@ public sealed class Product
             sku.Trim(),
             salePrice,
             itbisCategory,
+            kind,
             tracksInventory);
     }
 }
