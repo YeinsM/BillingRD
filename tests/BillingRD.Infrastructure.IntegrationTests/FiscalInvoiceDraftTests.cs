@@ -21,7 +21,7 @@ public sealed class FiscalInvoiceDraftTests
 
         var branchId = await RegisterAndCreateBusinessAsync(client, "fiscal31@example.test", "Fiscal 31");
 
-        var productId = await CreateProductAsync(client, "Servicio B2B", "B2B-001", 100m, "Standard");
+        var productId = await CreateProductAsync(client, "Servicio B2B", "B2B-001", 100m, "Standard", "Service");
 
         var customerResponse = await client.PostAsJsonAsync("/api/customers/", new
         {
@@ -177,7 +177,8 @@ public sealed class FiscalInvoiceDraftTests
         string name,
         string sku,
         decimal price,
-        string itbisCategory)
+        string itbisCategory,
+        string kind = "Good")
     {
         var response = await client.PostAsJsonAsync("/api/products/", new
         {
@@ -185,6 +186,7 @@ public sealed class FiscalInvoiceDraftTests
             sku,
             salePrice = price,
             itbisCategory,
+            kind,
             tracksInventory = false
         });
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
