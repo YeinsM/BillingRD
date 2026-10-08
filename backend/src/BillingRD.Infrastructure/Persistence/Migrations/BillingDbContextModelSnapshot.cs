@@ -86,6 +86,7 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.Property<DateTimeOffset>("CreatedAtUtc").HasColumnType("timestamp with time zone");
             b.Property<bool>("IsActive").HasColumnType("boolean");
             b.Property<string>("ItbisCategory").IsRequired().HasMaxLength(16).HasColumnType("character varying(16)");
+            b.Property<string>("Kind").IsRequired().HasMaxLength(16).HasColumnType("character varying(16)");
             b.Property<bool>("TracksInventory").HasColumnType("boolean").HasDefaultValue(true);
             b.Property<string>("Name").IsRequired().HasMaxLength(200).HasColumnType("character varying(200)");
             b.Property<decimal>("SalePrice").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
@@ -273,6 +274,7 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.Property<Guid>("BusinessId").HasColumnType("uuid");
             b.Property<string>("ItbisCategory").IsRequired().HasMaxLength(16).HasColumnType("character varying(16)");
             b.Property<Guid>("ProductId").HasColumnType("uuid");
+            b.Property<string>("ProductKind").IsRequired().HasMaxLength(16).HasColumnType("character varying(16)");
             b.Property<string>("ProductName").IsRequired().HasMaxLength(200).HasColumnType("character varying(200)");
             b.Property<decimal>("Quantity").HasPrecision(18, 3).HasColumnType("numeric(18,3)");
             b.Property<Guid>("ReturnId").HasColumnType("uuid");
@@ -291,6 +293,15 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.HasIndex("SaleId");
             b.HasIndex("SaleLineId");
             b.ToTable("return_lines");
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.ElectronicInvoicing.ElectronicFiscalDocumentDraft", b =>
+        {
+            b.Navigation("Lines")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+            b.Navigation("Payments")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
         });
 
         modelBuilder.Entity("BillingRD.Domain.Returns.SalesReturn", b =>
@@ -348,6 +359,15 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.Property<Guid>("CreatedByUserId").HasColumnType("uuid");
             b.Property<Guid?>("CustomerId").HasColumnType("uuid");
             b.Property<Guid?>("InvoiceId").HasColumnType("uuid");
+            b.Property<DateOnly?>("FiscalIssueDate").HasColumnType("date");
+            b.Property<string>("IncomeType").IsRequired().HasMaxLength(2).HasColumnType("character varying(2)");
+            b.Property<int>("PaymentType").HasColumnType("integer");
+            b.Property<decimal>("TaxableAmount18").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.Property<decimal>("TaxableAmount16").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.Property<decimal>("TaxableAmount0").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.Property<decimal>("ExemptAmount").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.Property<decimal>("Tax18").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.Property<decimal>("Tax16").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
             b.Property<string>("IssuerAddress").HasMaxLength(100).HasColumnType("character varying(100)");
             b.Property<string>("IssuerLegalName").HasMaxLength(150).HasColumnType("character varying(150)");
             b.Property<string>("IssuerRnc").HasMaxLength(11).HasColumnType("character varying(11)");
@@ -367,6 +387,43 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.HasIndex("ReturnId").IsUnique().HasFilter(@"""ReturnId"" IS NOT NULL");
             b.HasIndex("SaleId");
             b.ToTable("electronic_fiscal_document_drafts");
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.ElectronicInvoicing.FiscalDraftLine", b =>
+        {
+            b.Property<Guid>("Id").ValueGeneratedNever().HasColumnType("uuid");
+            b.Property<decimal>("Amount").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.Property<string>("BillingIndicator").IsRequired().HasMaxLength(1).HasColumnType("character varying(1)");
+            b.Property<Guid>("BusinessId").HasColumnType("uuid");
+            b.Property<Guid>("DraftId").HasColumnType("uuid");
+            b.Property<string>("Name").IsRequired().HasMaxLength(80).HasColumnType("character varying(80)");
+            b.Property<int>("Number").HasColumnType("integer");
+            b.Property<Guid>("ProductId").HasColumnType("uuid");
+            b.Property<string>("ProductKind").IsRequired().HasMaxLength(16).HasColumnType("character varying(16)");
+            b.Property<decimal>("Quantity").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.Property<string>("Sku").IsRequired().HasMaxLength(35).HasColumnType("character varying(35)");
+            b.Property<decimal>("TaxAmount").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.Property<decimal>("TaxRate").HasPrecision(5, 2).HasColumnType("numeric(5,2)");
+            b.Property<decimal>("UnitPrice").HasPrecision(20, 4).HasColumnType("numeric(20,4)");
+            b.HasKey("Id");
+            b.HasIndex("BusinessId");
+            b.HasIndex("DraftId", "Number").IsUnique();
+            b.ToTable("fiscal_draft_lines");
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.ElectronicInvoicing.FiscalDraftPayment", b =>
+        {
+            b.Property<Guid>("Id").ValueGeneratedNever().HasColumnType("uuid");
+            b.Property<decimal>("Amount").HasPrecision(18, 2).HasColumnType("numeric(18,2)");
+            b.Property<Guid>("BusinessId").HasColumnType("uuid");
+            b.Property<Guid>("DraftId").HasColumnType("uuid");
+            b.Property<int>("FormCode").HasColumnType("integer");
+            b.Property<Guid>("SourcePaymentId").HasColumnType("uuid");
+            b.HasKey("Id");
+            b.HasIndex("BusinessId");
+            b.HasIndex("DraftId");
+            b.HasIndex("SourcePaymentId").IsUnique();
+            b.ToTable("fiscal_draft_payments");
         });
 
         modelBuilder.Entity("BillingRD.Domain.Sales.Sale", b =>
@@ -778,6 +835,36 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
                 .WithMany()
                 .HasForeignKey("SaleId")
                 .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.ElectronicInvoicing.FiscalDraftLine", b =>
+        {
+            b.HasOne("BillingRD.Domain.Businesses.Business", null)
+                .WithMany()
+                .HasForeignKey("BusinessId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.ElectronicInvoicing.ElectronicFiscalDocumentDraft", null)
+                .WithMany("Lines")
+                .HasForeignKey("DraftId")
+                .OnDelete(DeleteBehavior.Cascade)
+                .IsRequired();
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.ElectronicInvoicing.FiscalDraftPayment", b =>
+        {
+            b.HasOne("BillingRD.Domain.Businesses.Business", null)
+                .WithMany()
+                .HasForeignKey("BusinessId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.ElectronicInvoicing.ElectronicFiscalDocumentDraft", null)
+                .WithMany("Payments")
+                .HasForeignKey("DraftId")
+                .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
         });
 
