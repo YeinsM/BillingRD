@@ -274,7 +274,6 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.Property<Guid>("BusinessId").HasColumnType("uuid");
             b.Property<string>("ItbisCategory").IsRequired().HasMaxLength(16).HasColumnType("character varying(16)");
             b.Property<Guid>("ProductId").HasColumnType("uuid");
-            b.Property<string>("ProductKind").IsRequired().HasMaxLength(16).HasColumnType("character varying(16)");
             b.Property<string>("ProductName").IsRequired().HasMaxLength(200).HasColumnType("character varying(200)");
             b.Property<decimal>("Quantity").HasPrecision(18, 3).HasColumnType("numeric(18,3)");
             b.Property<Guid>("ReturnId").HasColumnType("uuid");
@@ -293,15 +292,6 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.HasIndex("SaleId");
             b.HasIndex("SaleLineId");
             b.ToTable("return_lines");
-        });
-
-        modelBuilder.Entity("BillingRD.Domain.ElectronicInvoicing.ElectronicFiscalDocumentDraft", b =>
-        {
-            b.Navigation("Lines")
-                .UsePropertyAccessMode(PropertyAccessMode.Field);
-
-            b.Navigation("Payments")
-                .UsePropertyAccessMode(PropertyAccessMode.Field);
         });
 
         modelBuilder.Entity("BillingRD.Domain.Returns.SalesReturn", b =>
@@ -914,6 +904,15 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
                 .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
 
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.ElectronicInvoicing.ElectronicFiscalDocumentDraft", b =>
+        {
+            b.Navigation("Lines")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+            b.Navigation("Payments")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
         });
 
         modelBuilder.Entity("BillingRD.Domain.Returns.SalesReturn", b =>
