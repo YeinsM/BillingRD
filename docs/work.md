@@ -35,8 +35,8 @@ Estados: definido, en curso, pendiente de decisión, implementado, verificado, p
 | FISC-01 | BusinessFiscalProfile + identidad fiscal Customer | verificado | PR #10 + CI #37617623620 |
 | ECF-03 | Draft e-CF 31 con comprador identificado | verificado | FiscalInvoiceDraftTests + PostgreSQL |
 | ECF-04 | Draft e-CF 32 + regla DOP 250,000 | verificado | CI #37617623620 |
-| ECF-05 | Snapshot fiscal de líneas/totales/pagos para 31/32 | en curso | PR XML pendiente de CI |
-| ECF-06 | XML preview 31/32 pre-firma y preflight local | en curso | FiscalXmlPreviewTests pendiente de CI |
+| ECF-05 | Snapshot fiscal de líneas/totales/pagos para 31/32 | verificado | PR #11 + CI #37778862404 |
+| ECF-06 | XML preview 31/32 pre-firma y preflight local | verificado | FiscalXmlPreviewTests + CI #37778862404 |
 | DGII-01 | Integración fiscal desde fuente oficial vigente | definido | drafts 31/32/34 + XML preview; sin emisión |
 | OFF-01 | Preparación arquitectónica para offline | definido | ADR-005 |
 
@@ -53,9 +53,9 @@ Ajustes internos + base de ElectronicInvoicing verificados.
 
 Perfil fiscal + preparación e-CF 31/32 verificados.
 
-Slice actual: snapshot fiscal + XML preview 31/32.
+Snapshot fiscal + XML preview 31/32 verificados.
 
-Siguiente slice recomendado una vez verificado:
+Siguiente slice recomendado:
 1. importar/versionar XSD oficiales 31/32 con hash y pruebas de esquema;
 2. implementar proveedor de secuencias e-NCF de certificación/producción;
 3. implementar XMLDSig/certificado y recién entonces habilitar documento submittable.
