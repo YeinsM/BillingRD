@@ -131,6 +131,22 @@ public static class ElectronicInvoicingEndpoints
                 return Results.Conflict(new { message = "The invoice customer is not available." });
         }
 
+        var saleLines = await dbContext.SaleLines
+            .AsNoTracking()
+            .Where(x => x.SaleId == sale.Id)
+            .OrderBy(x => x.Id)
+            .ToListAsync(cancellationToken);
+
+        var payments = await dbContext.Payments
+            .AsNoTracking()
+            .Where(x => x.SaleId == sale.Id)
+            .OrderBy(x => x.Id)
+            .ToListAsync(cancellationToken);
+
+        var dominicanTimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Santo_Domingo");
+        var fiscalIssueDate = DateOnly.FromDateTime(
+            TimeZoneInfo.ConvertTime(invoice.IssuedAtUtc, dominicanTimeZone).Date);
+
         ElectronicFiscalDocumentDraft draft;
         try
         {
@@ -143,6 +159,9 @@ public static class ElectronicInvoicingEndpoints
                 request.Type,
                 issuer,
                 buyer,
+                saleLines,
+                payments,
+                fiscalIssueDate,
                 invoice.Subtotal,
                 invoice.TaxAmount,
                 invoice.Total);
@@ -308,9 +327,39 @@ public static class ElectronicInvoicingEndpoints
                 name = draft.BuyerName,
                 address = draft.BuyerAddress
             },
-            draft.Subtotal,
-            draft.TaxAmount,
-            draft.Total,
+            draft.FiscalIssueDate,
+            draft.IncomeType,
+            draft.PaymentType,
+            totals = new
+            {
+                draft.TaxableAmount18,
+                draft.TaxableAmount16,
+                draft.TaxableAmount0,
+                draft.ExemptAmount,
+                draft.Tax18,
+                draft.Tax16,
+                draft.Subtotal,
+                draft.TaxAmount,
+                draft.Total
+            },
+            lines = draft.Lines
+                .OrderBy(x => x.Number)
+                .Select(x => new
+                {
+                    x.Number,
+                    x.ProductId,
+                    x.Sku,
+                    x.Name,
+                    x.ProductKind,
+                    x.BillingIndicator,
+                    x.Quantity,
+                    x.UnitPrice,
+                    x.Amount,
+                    x.TaxAmount,
+                    x.TaxRate
+                }),
+            payments = draft.Payments
+                .Select(x => new { x.FormCode, x.Amount }),
             draft.CreatedAtUtc,
             issued = false,
             eNcf = (string?)null,
