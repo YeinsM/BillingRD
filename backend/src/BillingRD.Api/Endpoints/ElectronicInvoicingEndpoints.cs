@@ -386,6 +386,9 @@ public static class ElectronicInvoicingEndpoints
             draft.FiscalIssueDate,
             draft.IncomeType,
             draft.PaymentType,
+            draft.Subtotal,
+            draft.TaxAmount,
+            draft.Total,
             totals = new
             {
                 draft.TaxableAmount18,
