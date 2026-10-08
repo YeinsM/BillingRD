@@ -30,19 +30,6 @@ internal sealed class AdjustmentDocumentConfiguration : IEntityTypeConfiguration
         builder.HasOne<Sale>().WithMany().HasForeignKey(x => x.SaleId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<SalesReturn>().WithMany().HasForeignKey(x => x.ReturnId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<UserAccount>().WithMany().HasForeignKey(x => x.CreatedByUserId).OnDelete(DeleteBehavior.Restrict);
-
-        builder.HasMany(x => x.Lines)
-            .WithOne()
-            .HasForeignKey(x => x.DraftId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        builder.HasMany(x => x.Payments)
-            .WithOne()
-            .HasForeignKey(x => x.DraftId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        builder.Navigation(x => x.Lines).UsePropertyAccessMode(PropertyAccessMode.Field);
-        builder.Navigation(x => x.Payments).UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }
 
@@ -117,5 +104,18 @@ internal sealed class ElectronicFiscalDocumentDraftConfiguration : IEntityTypeCo
         builder.HasOne<SalesReturn>().WithMany().HasForeignKey(x => x.ReturnId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Customer>().WithMany().HasForeignKey(x => x.CustomerId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<UserAccount>().WithMany().HasForeignKey(x => x.CreatedByUserId).OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasMany(x => x.Lines)
+            .WithOne()
+            .HasForeignKey(x => x.DraftId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(x => x.Payments)
+            .WithOne()
+            .HasForeignKey(x => x.DraftId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(x => x.Lines).UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.Navigation(x => x.Payments).UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }
