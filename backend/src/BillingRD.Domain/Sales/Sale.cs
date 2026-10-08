@@ -1,4 +1,5 @@
 using BillingRD.Domain.Billing;
+using BillingRD.Domain.Catalog;
 
 namespace BillingRD.Domain.Sales;
 
@@ -64,7 +65,8 @@ public sealed class Sale
         string sku,
         decimal quantity,
         decimal unitPrice,
-        ItbisCategory itbisCategory)
+        ItbisCategory itbisCategory,
+        ProductKind productKind)
     {
         var line = new SaleLine(
             BusinessId,
@@ -74,7 +76,8 @@ public sealed class Sale
             sku,
             quantity,
             unitPrice,
-            itbisCategory);
+            itbisCategory,
+            productKind);
 
         _lines.Add(line);
         RecalculateTotals();
