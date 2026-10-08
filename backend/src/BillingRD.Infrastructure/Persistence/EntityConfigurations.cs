@@ -84,6 +84,7 @@ internal sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(x => x.Barcode).HasMaxLength(80);
         builder.Property(x => x.SalePrice).HasPrecision(18, 2);
         builder.Property(x => x.ItbisCategory).HasConversion<string>().HasMaxLength(16);
+        builder.Property(x => x.Kind).HasConversion<string>().HasMaxLength(16);
         builder.Property(x => x.TracksInventory).HasDefaultValue(true);
         builder.HasIndex(x => new { x.BusinessId, x.Sku }).IsUnique();
         builder.HasIndex(x => new { x.BusinessId, x.Barcode }).IsUnique().HasFilter(@"""Barcode"" IS NOT NULL");
