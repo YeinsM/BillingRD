@@ -38,6 +38,7 @@ public static class ProductEndpoints
                 product.Barcode,
                 product.SalePrice,
                 product.ItbisCategory,
+                product.Kind,
                 product.TracksInventory,
                 product.IsActive
             })
@@ -60,11 +61,12 @@ public static class ProductEndpoints
         if (string.IsNullOrWhiteSpace(request.Name) ||
             string.IsNullOrWhiteSpace(request.Sku) ||
             request.SalePrice < 0 ||
-            !Enum.IsDefined(request.ItbisCategory))
+            !Enum.IsDefined(request.ItbisCategory) ||
+            !Enum.IsDefined(request.Kind))
         {
             return Results.ValidationProblem(new Dictionary<string, string[]>
             {
-                ["product"] = ["Name, SKU, non-negative sale price and a supported ITBIS category are required."]
+                ["product"] = ["Name, SKU, non-negative sale price, supported ITBIS category and product kind are required."]
             });
         }
 
@@ -85,6 +87,7 @@ public static class ProductEndpoints
             normalizedSku,
             request.SalePrice,
             request.ItbisCategory,
+            request.Kind,
             request.TracksInventory);
 
         dbContext.Products.Add(product);
@@ -97,6 +100,7 @@ public static class ProductEndpoints
             product.Sku,
             product.SalePrice,
             product.ItbisCategory,
+            product.Kind,
             product.TracksInventory
         });
     }
@@ -106,5 +110,6 @@ public static class ProductEndpoints
         string? Sku,
         decimal SalePrice,
         ItbisCategory ItbisCategory = ItbisCategory.Standard,
+        ProductKind Kind = ProductKind.Unknown,
         bool TracksInventory = true);
 }
