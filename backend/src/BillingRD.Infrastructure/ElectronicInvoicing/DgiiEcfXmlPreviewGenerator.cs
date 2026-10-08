@@ -36,7 +36,7 @@ public static partial class DgiiEcfXmlPreviewGenerator
             new XElement("TipoeCF", ((int)draft.Type).ToString(CultureInfo.InvariantCulture)),
             new XElement("eNCF", eNcf));
 
-        if (sequenceExpiration.HasValue)
+        if (draft.Type == EcfType.CreditFiscalInvoice31 && sequenceExpiration.HasValue)
             idDoc.Add(new XElement("FechaVencimientoSecuencia", FormatDate(sequenceExpiration.Value)));
 
         if (draft.TaxableAmount18 + draft.TaxableAmount16 + draft.TaxableAmount0 > 0)
