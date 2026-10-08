@@ -42,6 +42,8 @@ public sealed class BillingDbContext(
     public DbSet<Refund> Refunds => Set<Refund>();
     public DbSet<AdjustmentDocument> AdjustmentDocuments => Set<AdjustmentDocument>();
     public DbSet<ElectronicFiscalDocumentDraft> ElectronicFiscalDocumentDrafts => Set<ElectronicFiscalDocumentDraft>();
+    public DbSet<FiscalDraftLine> FiscalDraftLines => Set<FiscalDraftLine>();
+    public DbSet<FiscalDraftPayment> FiscalDraftPayments => Set<FiscalDraftPayment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -66,5 +68,7 @@ public sealed class BillingDbContext(
         modelBuilder.Entity<Refund>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
         modelBuilder.Entity<AdjustmentDocument>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
         modelBuilder.Entity<ElectronicFiscalDocumentDraft>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
+        modelBuilder.Entity<FiscalDraftLine>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
+        modelBuilder.Entity<FiscalDraftPayment>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
     }
 }

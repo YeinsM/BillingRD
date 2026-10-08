@@ -5,6 +5,7 @@ using BillingRD.Domain.Customers;
 using BillingRD.Domain.ElectronicInvoicing;
 using BillingRD.Domain.Identity;
 using BillingRD.Infrastructure.Persistence;
+using BillingRD.Infrastructure.ElectronicInvoicing;
 using Microsoft.EntityFrameworkCore;
 
 namespace BillingRD.Api.Endpoints;
@@ -20,6 +21,7 @@ public static class ElectronicInvoicingEndpoints
         drafts.MapPost("/invoice/{invoiceId:guid}", CreateInvoiceDraftAsync);
         drafts.MapPost("/credit-note/from-adjustment/{adjustmentId:guid}", CreateCreditNoteDraftAsync);
         drafts.MapGet("/{draftId:guid}", GetDraftAsync);
+        drafts.MapPost("/{draftId:guid}/xml-preview", GenerateXmlPreviewAsync);
 
         return endpoints;
     }
@@ -87,6 +89,8 @@ public static class ElectronicInvoicingEndpoints
 
         var existing = await dbContext.ElectronicFiscalDocumentDrafts
             .AsNoTracking()
+            .Include(x => x.Lines)
+            .Include(x => x.Payments)
             .SingleOrDefaultAsync(x => x.InvoiceId == invoiceId, cancellationToken);
 
         if (existing is not null)
@@ -131,6 +135,22 @@ public static class ElectronicInvoicingEndpoints
                 return Results.Conflict(new { message = "The invoice customer is not available." });
         }
 
+        var saleLines = await dbContext.SaleLines
+            .AsNoTracking()
+            .Where(x => x.SaleId == sale.Id)
+            .OrderBy(x => x.Id)
+            .ToListAsync(cancellationToken);
+
+        var payments = await dbContext.Payments
+            .AsNoTracking()
+            .Where(x => x.SaleId == sale.Id)
+            .OrderBy(x => x.Id)
+            .ToListAsync(cancellationToken);
+
+        var dominicanTimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Santo_Domingo");
+        var fiscalIssueDate = DateOnly.FromDateTime(
+            TimeZoneInfo.ConvertTime(invoice.IssuedAtUtc, dominicanTimeZone).Date);
+
         ElectronicFiscalDocumentDraft draft;
         try
         {
@@ -143,6 +163,9 @@ public static class ElectronicInvoicingEndpoints
                 request.Type,
                 issuer,
                 buyer,
+                saleLines,
+                payments,
+                fiscalIssueDate,
                 invoice.Subtotal,
                 invoice.TaxAmount,
                 invoice.Total);
@@ -265,11 +288,63 @@ public static class ElectronicInvoicingEndpoints
 
         var draft = await dbContext.ElectronicFiscalDocumentDrafts
             .AsNoTracking()
+            .Include(x => x.Lines)
+            .Include(x => x.Payments)
             .SingleOrDefaultAsync(x => x.Id == draftId, cancellationToken);
 
         return draft is null
             ? Results.NotFound()
             : BuildDraftResult(draft, StatusCodes.Status200OK);
+    }
+
+    private static async Task<IResult> GenerateXmlPreviewAsync(
+        Guid draftId,
+        XmlPreviewRequest request,
+        HttpContext httpContext,
+        CurrentBusinessContext currentBusiness,
+        BillingDbContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        if (!currentBusiness.BusinessId.HasValue)
+            return Results.Conflict(new { message = "Select an active business before generating an XML preview." });
+
+        if (!Guid.TryParse(httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            return Results.Unauthorized();
+
+        if (!await CanPrepareFiscalDraftAsync(dbContext, currentBusiness.BusinessId.Value, userId, cancellationToken))
+            return Results.Forbid();
+
+        var draft = await dbContext.ElectronicFiscalDocumentDrafts
+            .AsNoTracking()
+            .Include(x => x.Lines)
+            .Include(x => x.Payments)
+            .SingleOrDefaultAsync(x => x.Id == draftId, cancellationToken);
+
+        if (draft is null)
+            return Results.NotFound();
+
+        try
+        {
+            var xml = DgiiEcfXmlPreviewGenerator.Generate(draft, request.ENcf, request.SequenceExpiration);
+            return Results.Ok(new
+            {
+                draft.Id,
+                ecfType = (int)draft.Type,
+                previewOnly = true,
+                schemaValidation = "preflight-only",
+                digitallySigned = false,
+                submittableToDgii = false,
+                xml
+            });
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.ValidationProblem(new Dictionary<string, string[]> { ["xmlPreview"] = [ex.Message] });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.Conflict(new { message = ex.Message });
+        }
     }
 
     private static Task<bool> CanPrepareFiscalDraftAsync(
@@ -308,9 +383,42 @@ public static class ElectronicInvoicingEndpoints
                 name = draft.BuyerName,
                 address = draft.BuyerAddress
             },
+            draft.FiscalIssueDate,
+            draft.IncomeType,
+            draft.PaymentType,
             draft.Subtotal,
             draft.TaxAmount,
             draft.Total,
+            totals = new
+            {
+                draft.TaxableAmount18,
+                draft.TaxableAmount16,
+                draft.TaxableAmount0,
+                draft.ExemptAmount,
+                draft.Tax18,
+                draft.Tax16,
+                draft.Subtotal,
+                draft.TaxAmount,
+                draft.Total
+            },
+            lines = draft.Lines
+                .OrderBy(x => x.Number)
+                .Select(x => new
+                {
+                    x.Number,
+                    x.ProductId,
+                    x.Sku,
+                    x.Name,
+                    x.ProductKind,
+                    x.BillingIndicator,
+                    x.Quantity,
+                    x.UnitPrice,
+                    x.Amount,
+                    x.TaxAmount,
+                    x.TaxRate
+                }),
+            payments = draft.Payments
+                .Select(x => new { x.FormCode, x.Amount }),
             draft.CreatedAtUtc,
             issued = false,
             eNcf = (string?)null,
@@ -320,4 +428,5 @@ public static class ElectronicInvoicingEndpoints
         }, statusCode: statusCode);
 
     public sealed record CreateInvoiceDraftRequest(EcfType Type);
+    public sealed record XmlPreviewRequest(string ENcf, DateOnly? SequenceExpiration);
 }

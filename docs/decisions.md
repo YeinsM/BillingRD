@@ -186,3 +186,23 @@ consultada el 2026-10-07.
 
 Motivo: cubrir primero los comprobantes directamente asociados al flujo de venta minorista/B2B y sus devoluciones,
 sin convertir el catálogo completo de e-CF en alcance obligatorio.
+
+
+## ADR-017 — Snapshot fiscal y XML preview previo a firma — 2026-10-08
+Estado: adoptado.
+Los drafts e-CF 31/32 guardan snapshots propios de fecha fiscal, líneas, clasificación Bien/Servicio, indicador de
+facturación, bases por tasa y formas de pago. El XML no se reconstruye desde Product/Customer/Payment mutable.
+
+ProductKind distingue Unknown, Good y Service. Datos históricos migran como Unknown; un draft fiscal 31/32 se rechaza
+si una línea no está clasificada. La cantidad fiscal se limita a dos decimales conforme al formato e-CF, aunque el
+inventario interno conserve precisión de tres decimales.
+
+Se incorpora un generador de XML preview con estructura ECF/Encabezado/DetallesItems para 31/32. Recibe un e-NCF de
+prueba/certificación explícito y, para tipo 31, fecha de vencimiento de secuencia. Este preview NO asigna secuencias,
+NO firma, NO envía y se expone como previewOnly=true, schemaValidation=preflight-only y submittableToDgii=false.
+
+No se afirmará validación XSD oficial hasta incorporar los XSD publicados por DGII con control de versión/hash y
+validar el documento completo, incluida la estructura de firma exigida. Fuente verificada el 2026-10-08: Formato
+Comprobante Fiscal Electrónico v1.0 y XSD e-CF 31/32 publicados por DGII.
+
+Motivo: preparar una proyección XML trazable y testeable sin confundir un artefacto previo a firma con un e-CF válido.

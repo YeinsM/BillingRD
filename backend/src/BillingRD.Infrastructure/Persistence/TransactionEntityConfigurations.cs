@@ -48,6 +48,7 @@ internal sealed class SaleLineConfiguration : IEntityTypeConfiguration<SaleLine>
         builder.Property(x => x.Quantity).HasPrecision(18, 3);
         builder.Property(x => x.UnitPrice).HasPrecision(18, 2);
         builder.Property(x => x.ItbisCategory).HasConversion<string>().HasMaxLength(16);
+        builder.Property(x => x.ProductKind).HasConversion<string>().HasMaxLength(16);
         builder.Property(x => x.TaxRate).HasPrecision(5, 2);
         builder.Property(x => x.Subtotal).HasPrecision(18, 2);
         builder.Property(x => x.TaxAmount).HasPrecision(18, 2);

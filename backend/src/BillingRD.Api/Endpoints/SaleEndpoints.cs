@@ -147,7 +147,8 @@ public static class SaleEndpoints
                 product.Sku,
                 item.Quantity,
                 product.SalePrice,
-                product.ItbisCategory);
+                product.ItbisCategory,
+                product.Kind);
         }
 
         var payments = new List<Payment>(request.Payments.Count);

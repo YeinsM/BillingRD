@@ -1,4 +1,5 @@
 using BillingRD.Domain.Billing;
+using BillingRD.Domain.Catalog;
 
 namespace BillingRD.Domain.Sales;
 
@@ -14,7 +15,8 @@ public sealed class SaleLine
         string sku,
         decimal quantity,
         decimal unitPrice,
-        ItbisCategory itbisCategory)
+        ItbisCategory itbisCategory,
+        ProductKind productKind)
     {
         if (businessId == Guid.Empty) throw new ArgumentException("Business id is required.", nameof(businessId));
         if (quantity <= 0) throw new ArgumentOutOfRangeException(nameof(quantity));
@@ -28,6 +30,7 @@ public sealed class SaleLine
         Quantity = quantity;
         UnitPrice = MoneyMath.RoundCurrency(unitPrice);
         ItbisCategory = itbisCategory;
+        ProductKind = productKind;
         TaxRate = itbisCategory.Rate();
 
         Subtotal = MoneyMath.RoundCurrency(Quantity * UnitPrice);
@@ -44,6 +47,7 @@ public sealed class SaleLine
     public decimal Quantity { get; private set; }
     public decimal UnitPrice { get; private set; }
     public ItbisCategory ItbisCategory { get; private set; }
+    public ProductKind ProductKind { get; private set; }
     public decimal TaxRate { get; private set; }
     public decimal Subtotal { get; private set; }
     public decimal TaxAmount { get; private set; }

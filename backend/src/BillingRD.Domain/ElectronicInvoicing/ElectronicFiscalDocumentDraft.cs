@@ -1,15 +1,16 @@
 using BillingRD.Domain.Billing;
 using BillingRD.Domain.Businesses;
 using BillingRD.Domain.Customers;
+using BillingRD.Domain.Payments;
+using BillingRD.Domain.Sales;
 
 namespace BillingRD.Domain.ElectronicInvoicing;
 
-/// <summary>
-/// Preparation record for future e-CF generation. It is not an issued fiscal document.
-/// It intentionally contains no e-NCF, signed XML, DGII track id or acceptance status.
-/// </summary>
 public sealed class ElectronicFiscalDocumentDraft
 {
+    private readonly List<FiscalDraftLine> _lines = [];
+    private readonly List<FiscalDraftPayment> _payments = [];
+
     private ElectronicFiscalDocumentDraft() { }
 
     private ElectronicFiscalDocumentDraft(
@@ -43,6 +44,10 @@ public sealed class ElectronicFiscalDocumentDraft
     public Guid CreatedByUserId { get; private set; }
     public EcfType Type { get; private set; }
 
+    public DateOnly? FiscalIssueDate { get; private set; }
+    public string IncomeType { get; private set; } = "01";
+    public int PaymentType { get; private set; } = 1;
+
     public string? IssuerRnc { get; private set; }
     public string? IssuerLegalName { get; private set; }
     public string? IssuerTradeName { get; private set; }
@@ -53,10 +58,19 @@ public sealed class ElectronicFiscalDocumentDraft
     public string? BuyerName { get; private set; }
     public string? BuyerAddress { get; private set; }
 
+    public decimal TaxableAmount18 { get; private set; }
+    public decimal TaxableAmount16 { get; private set; }
+    public decimal TaxableAmount0 { get; private set; }
+    public decimal ExemptAmount { get; private set; }
+    public decimal Tax18 { get; private set; }
+    public decimal Tax16 { get; private set; }
     public decimal Subtotal { get; private set; }
     public decimal TaxAmount { get; private set; }
     public decimal Total { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; private set; }
+
+    public IReadOnlyCollection<FiscalDraftLine> Lines => _lines;
+    public IReadOnlyCollection<FiscalDraftPayment> Payments => _payments;
 
     public static ElectronicFiscalDocumentDraft InvoiceFromSale(
         Guid businessId,
@@ -67,6 +81,9 @@ public sealed class ElectronicFiscalDocumentDraft
         EcfType type,
         BusinessFiscalProfile issuer,
         Customer? buyer,
+        IReadOnlyCollection<SaleLine> saleLines,
+        IReadOnlyCollection<Payment> payments,
+        DateOnly fiscalIssueDate,
         decimal subtotal,
         decimal taxAmount,
         decimal total)
@@ -74,6 +91,18 @@ public sealed class ElectronicFiscalDocumentDraft
         if (invoiceId == Guid.Empty) throw new ArgumentException("Invoice id is required.", nameof(invoiceId));
         if (type is not (EcfType.CreditFiscalInvoice31 or EcfType.ConsumerInvoice32))
             throw new ArgumentException("Only e-CF 31 or 32 can be prepared from an internal invoice.", nameof(type));
+        if (saleLines.Count == 0) throw new InvalidOperationException("An e-CF requires at least one detail line.");
+        if (payments.Count == 0 || payments.Count > 7) throw new InvalidOperationException("An e-CF supports between 1 and 7 payment forms.");
+
+        var maxLines = type switch
+        {
+            EcfType.CreditFiscalInvoice31 => 100,
+            EcfType.ConsumerInvoice32 when total >= 250000m => 1000,
+            EcfType.ConsumerInvoice32 => 10000,
+            _ => 100
+        };
+        if (saleLines.Count > maxLines)
+            throw new InvalidOperationException($"e-CF {(int)type} supports at most {maxLines} detail lines for this amount.");
 
         if (type == EcfType.CreditFiscalInvoice31)
         {
@@ -103,6 +132,7 @@ public sealed class ElectronicFiscalDocumentDraft
         {
             InvoiceId = invoiceId,
             CustomerId = customerId,
+            FiscalIssueDate = fiscalIssueDate,
             IssuerRnc = issuer.Rnc,
             IssuerLegalName = issuer.LegalName,
             IssuerTradeName = issuer.TradeName,
@@ -116,6 +146,34 @@ public sealed class ElectronicFiscalDocumentDraft
             draft.BuyerName = buyer.Name;
             draft.BuyerAddress = buyer.FiscalAddress;
         }
+
+        var lineNumber = 1;
+        foreach (var line in saleLines.OrderBy(x => x.Id))
+        {
+            var snapshot = FiscalDraftLine.FromSaleLine(businessId, draft.Id, lineNumber++, line);
+            draft._lines.Add(snapshot);
+
+            switch (snapshot.BillingIndicator)
+            {
+                case "1":
+                    draft.TaxableAmount18 = MoneyMath.RoundCurrency(draft.TaxableAmount18 + snapshot.Amount);
+                    draft.Tax18 = MoneyMath.RoundCurrency(draft.Tax18 + snapshot.TaxAmount);
+                    break;
+                case "2":
+                    draft.TaxableAmount16 = MoneyMath.RoundCurrency(draft.TaxableAmount16 + snapshot.Amount);
+                    draft.Tax16 = MoneyMath.RoundCurrency(draft.Tax16 + snapshot.TaxAmount);
+                    break;
+                case "3":
+                    draft.TaxableAmount0 = MoneyMath.RoundCurrency(draft.TaxableAmount0 + snapshot.Amount);
+                    break;
+                case "E":
+                    draft.ExemptAmount = MoneyMath.RoundCurrency(draft.ExemptAmount + snapshot.Amount);
+                    break;
+            }
+        }
+
+        foreach (var payment in payments.OrderBy(x => x.Id))
+            draft._payments.Add(FiscalDraftPayment.FromPayment(businessId, draft.Id, payment));
 
         return draft;
     }
@@ -133,7 +191,7 @@ public sealed class ElectronicFiscalDocumentDraft
         if (adjustmentDocumentId == Guid.Empty)
             throw new ArgumentException("Adjustment document id is required.", nameof(adjustmentDocumentId));
 
-        var draft = new ElectronicFiscalDocumentDraft(
+        return new ElectronicFiscalDocumentDraft(
             Guid.CreateVersion7(),
             businessId,
             saleId,
@@ -146,7 +204,5 @@ public sealed class ElectronicFiscalDocumentDraft
             AdjustmentDocumentId = adjustmentDocumentId,
             ReturnId = returnId
         };
-
-        return draft;
     }
 }
