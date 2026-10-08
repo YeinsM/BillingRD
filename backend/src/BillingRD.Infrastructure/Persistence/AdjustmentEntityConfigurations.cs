@@ -30,6 +30,51 @@ internal sealed class AdjustmentDocumentConfiguration : IEntityTypeConfiguration
         builder.HasOne<Sale>().WithMany().HasForeignKey(x => x.SaleId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<SalesReturn>().WithMany().HasForeignKey(x => x.ReturnId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<UserAccount>().WithMany().HasForeignKey(x => x.CreatedByUserId).OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasMany(x => x.Lines)
+            .WithOne()
+            .HasForeignKey(x => x.DraftId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(x => x.Payments)
+            .WithOne()
+            .HasForeignKey(x => x.DraftId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(x => x.Lines).UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.Navigation(x => x.Payments).UsePropertyAccessMode(PropertyAccessMode.Field);
+    }
+}
+
+internal sealed class FiscalDraftLineConfiguration : IEntityTypeConfiguration<FiscalDraftLine>
+{
+    public void Configure(EntityTypeBuilder<FiscalDraftLine> builder)
+    {
+        builder.ToTable("fiscal_draft_lines");
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Sku).HasMaxLength(35).IsRequired();
+        builder.Property(x => x.Name).HasMaxLength(80).IsRequired();
+        builder.Property(x => x.ProductKind).HasConversion<string>().HasMaxLength(16);
+        builder.Property(x => x.BillingIndicator).HasMaxLength(1).IsRequired();
+        builder.Property(x => x.Quantity).HasPrecision(18, 2);
+        builder.Property(x => x.UnitPrice).HasPrecision(20, 4);
+        builder.Property(x => x.Amount).HasPrecision(18, 2);
+        builder.Property(x => x.TaxAmount).HasPrecision(18, 2);
+        builder.Property(x => x.TaxRate).HasPrecision(5, 2);
+        builder.HasIndex(x => new { x.DraftId, x.Number }).IsUnique();
+        builder.HasOne<Business>().WithMany().HasForeignKey(x => x.BusinessId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+internal sealed class FiscalDraftPaymentConfiguration : IEntityTypeConfiguration<FiscalDraftPayment>
+{
+    public void Configure(EntityTypeBuilder<FiscalDraftPayment> builder)
+    {
+        builder.ToTable("fiscal_draft_payments");
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Amount).HasPrecision(18, 2);
+        builder.HasIndex(x => x.SourcePaymentId).IsUnique();
+        builder.HasOne<Business>().WithMany().HasForeignKey(x => x.BusinessId).OnDelete(DeleteBehavior.Restrict);
     }
 }
 
@@ -40,6 +85,14 @@ internal sealed class ElectronicFiscalDocumentDraftConfiguration : IEntityTypeCo
         builder.ToTable("electronic_fiscal_document_drafts");
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Type).HasConversion<int>();
+        builder.Property(x => x.FiscalIssueDate).HasColumnType("date");
+        builder.Property(x => x.IncomeType).HasMaxLength(2);
+        builder.Property(x => x.TaxableAmount18).HasPrecision(18, 2);
+        builder.Property(x => x.TaxableAmount16).HasPrecision(18, 2);
+        builder.Property(x => x.TaxableAmount0).HasPrecision(18, 2);
+        builder.Property(x => x.ExemptAmount).HasPrecision(18, 2);
+        builder.Property(x => x.Tax18).HasPrecision(18, 2);
+        builder.Property(x => x.Tax16).HasPrecision(18, 2);
         builder.Property(x => x.IssuerRnc).HasMaxLength(11);
         builder.Property(x => x.IssuerLegalName).HasMaxLength(150);
         builder.Property(x => x.IssuerTradeName).HasMaxLength(150);
