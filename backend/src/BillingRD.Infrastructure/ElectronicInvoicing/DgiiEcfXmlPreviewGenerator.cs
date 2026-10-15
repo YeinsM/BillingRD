@@ -10,7 +10,8 @@ public static partial class DgiiEcfXmlPreviewGenerator
     public static string Generate(
         ElectronicFiscalDocumentDraft draft,
         string eNcf,
-        DateOnly? sequenceExpiration)
+        DateOnly? sequenceExpiration,
+        DateTimeOffset? generatedAtUtc = null)
     {
         if (draft.Type is not (EcfType.CreditFiscalInvoice31 or EcfType.ConsumerInvoice32))
             throw new InvalidOperationException("XML preview currently supports only e-CF 31 and 32.");
@@ -80,29 +81,27 @@ public static partial class DgiiEcfXmlPreviewGenerator
         if (taxableTotal > 0)
             totales.Add(new XElement("MontoGravadoTotal", Money(taxableTotal)));
         if (draft.TaxableAmount18 > 0)
-        {
-            totales.Add(
-                new XElement("MontoGravadoI1", Money(draft.TaxableAmount18)),
-                new XElement("ITBIS1", "18"),
-                new XElement("TotalITBIS1", Money(draft.Tax18)));
-        }
+            totales.Add(new XElement("MontoGravadoI1", Money(draft.TaxableAmount18)));
         if (draft.TaxableAmount16 > 0)
-        {
-            totales.Add(
-                new XElement("MontoGravadoI2", Money(draft.TaxableAmount16)),
-                new XElement("ITBIS2", "16"),
-                new XElement("TotalITBIS2", Money(draft.Tax16)));
-        }
+            totales.Add(new XElement("MontoGravadoI2", Money(draft.TaxableAmount16)));
         if (draft.TaxableAmount0 > 0)
-        {
-            totales.Add(
-                new XElement("MontoGravadoI3", Money(draft.TaxableAmount0)),
-                new XElement("ITBIS3", "0"));
-        }
+            totales.Add(new XElement("MontoGravadoI3", Money(draft.TaxableAmount0)));
         if (draft.ExemptAmount > 0)
             totales.Add(new XElement("MontoExento", Money(draft.ExemptAmount)));
+
+        if (draft.TaxableAmount18 > 0)
+            totales.Add(new XElement("ITBIS1", "18"));
+        if (draft.TaxableAmount16 > 0)
+            totales.Add(new XElement("ITBIS2", "16"));
+        if (draft.TaxableAmount0 > 0)
+            totales.Add(new XElement("ITBIS3", "0"));
+
         if (draft.TaxAmount > 0)
             totales.Add(new XElement("TotalITBIS", Money(draft.TaxAmount)));
+        if (draft.TaxableAmount18 > 0)
+            totales.Add(new XElement("TotalITBIS1", Money(draft.Tax18)));
+        if (draft.TaxableAmount16 > 0)
+            totales.Add(new XElement("TotalITBIS2", Money(draft.Tax16)));
 
         totales.Add(new XElement("MontoTotal", Money(draft.Total)));
 
@@ -131,7 +130,9 @@ public static partial class DgiiEcfXmlPreviewGenerator
                     emisor,
                     comprador,
                     totales),
-                detalles));
+                detalles,
+                new XElement("FechaHoraFirma", FormatDateTime(generatedAtUtc ?? DateTimeOffset.UtcNow)),
+                new XElement(XName.Get("UnsignedSignaturePlaceholder", "urn:billingrd:unsigned-preview"))));
 
         return document.ToString(SaveOptions.DisableFormatting);
     }
@@ -147,6 +148,13 @@ public static partial class DgiiEcfXmlPreviewGenerator
     }
 
     private static string FormatDate(DateOnly value) => value.ToString("dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+    private static string FormatDateTime(DateTimeOffset value)
+    {
+        var dominicanTimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Santo_Domingo");
+        return TimeZoneInfo.ConvertTime(value, dominicanTimeZone)
+            .ToString("dd-MM-yyyy HH:mm:ss", CultureInfo.InvariantCulture);
+    }
     private static string Money(decimal value) => value.ToString("0.00", CultureInfo.InvariantCulture);
     private static string Quantity(decimal value) => value.ToString("0.00", CultureInfo.InvariantCulture);
     private static string UnitPrice(decimal value) => value.ToString("0.0000", CultureInfo.InvariantCulture);
