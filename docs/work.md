@@ -37,7 +37,7 @@ Estados: definido, en curso, pendiente de decisión, implementado, verificado, p
 | ECF-04 | Draft e-CF 32 + regla DOP 250,000 | verificado | CI #37617623620 |
 | ECF-05 | Snapshot fiscal de líneas/totales/pagos para 31/32 | verificado | PR #11 + CI #37778862404 |
 | ECF-06 | XML preview 31/32 pre-firma y preflight local | verificado | FiscalXmlPreviewTests + CI #37778862404 |
-| ECF-07 | XSD oficiales 31/32 pinneados + SHA-256 + validación local | en curso | PR pendiente de CI |
+| ECF-07 | XSD oficiales 31/32 pinneados + SHA-256 + validación local | verificado | PR #12 + CI #38676255801 |
 | DGII-01 | Integración fiscal desde fuente oficial vigente | definido | drafts 31/32/34 + XML XSD-valid; sin firma/envío |
 | OFF-01 | Preparación arquitectónica para offline | definido | ADR-005 |
 
@@ -56,9 +56,9 @@ Perfil fiscal + preparación e-CF 31/32 verificados.
 
 Snapshot fiscal + XML preview 31/32 verificados.
 
-Slice actual: XSD oficiales 31/32 + validación local.
+XSD oficiales 31/32 + validación local verificados.
 
-Siguiente slice recomendado una vez verificado:
+Siguiente slice recomendado:
 1. implementar proveedor de secuencias e-NCF con separación certificación/producción;
 2. modelar ciclo de certificado sin guardar secretos en repo;
 3. implementar XMLDSig y validación criptográfica antes de cualquier transporte DGII.
