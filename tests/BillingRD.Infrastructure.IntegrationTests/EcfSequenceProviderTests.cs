@@ -105,7 +105,7 @@ public sealed class EcfSequenceProviderTests
                 environment = "PreCertification",
                 type = "CreditFiscalInvoice31",
                 fromNumber = 1,
-                toNumber = 2,
+                toNumber = 3,
                 nextNumber = 1,
                 expirationDate = "2028-12-31"
             });
@@ -156,17 +156,42 @@ public sealed class EcfSequenceProviderTests
         Assert.Equal("E310000000001", productionJson.GetProperty("eNcf").GetString());
         Assert.Equal("Production", productionJson.GetProperty("environment").GetString());
 
+        var concurrentDraftA = await CreateDraftAsync("sequence-sale-concurrent-a");
+        var concurrentDraftB = await CreateDraftAsync("sequence-sale-concurrent-b");
+
+        var concurrentRequests = await Task.WhenAll(
+            client.PostAsJsonAsync(
+                $"/api/electronic-invoicing/drafts/{concurrentDraftA}/e-ncf",
+                new { environment = "PreCertification" }),
+            client.PostAsJsonAsync(
+                $"/api/electronic-invoicing/drafts/{concurrentDraftB}/e-ncf",
+                new { environment = "PreCertification" }));
+
+        Assert.All(concurrentRequests, response => Assert.Equal(HttpStatusCode.Created, response.StatusCode));
+
+        var concurrentENcfs = new HashSet<string>();
+        foreach (var response in concurrentRequests)
+        {
+            var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+            concurrentENcfs.Add(json.GetProperty("eNcf").GetString()!);
+        }
+
+        Assert.Equal(2, concurrentENcfs.Count);
+        Assert.Contains("E310000000002", concurrentENcfs);
+        Assert.Contains("E310000000003", concurrentENcfs);
+
         await using var verificationScope = factory.Services.CreateAsyncScope();
         var verificationDb = verificationScope.ServiceProvider.GetRequiredService<BillingDbContext>();
 
         Assert.Equal(2, await verificationDb.EcfSequenceAllocations.CountAsync());
         Assert.Equal(2, await verificationDb.EcfSequenceRanges.CountAsync());
 
-        var nextNumbers = await verificationDb.EcfSequenceRanges
+        var ranges = await verificationDb.EcfSequenceRanges
             .OrderBy(x => x.Environment)
-            .Select(x => x.NextNumber)
+            .Select(x => new { x.Environment, x.NextNumber })
             .ToListAsync();
 
-        Assert.All(nextNumbers, next => Assert.Equal(2, next));
+        Assert.Equal(4, ranges.Single(x => x.Environment == BillingRD.Domain.ElectronicInvoicing.EcfEnvironment.PreCertification).NextNumber);
+        Assert.Equal(2, ranges.Single(x => x.Environment == BillingRD.Domain.ElectronicInvoicing.EcfEnvironment.Production).NextNumber);
     }
 }
