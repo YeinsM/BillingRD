@@ -38,7 +38,7 @@ Estados: definido, en curso, pendiente de decisión, implementado, verificado, p
 | ECF-05 | Snapshot fiscal de líneas/totales/pagos para 31/32 | verificado | PR #11 + CI #37778862404 |
 | ECF-06 | XML preview 31/32 pre-firma y preflight local | verificado | FiscalXmlPreviewTests + CI #37778862404 |
 | ECF-07 | XSD oficiales 31/32 pinneados + SHA-256 + validación local | verificado | PR #12 + CI #38676255801 |
-| ECF-08 | Rangos y asignación e-NCF por negocio/ambiente/tipo con idempotencia | en curso | PR #13 + EcfSequenceProviderTests |
+| ECF-08 | Rangos y asignación e-NCF por negocio/ambiente/tipo con idempotencia | verificado | PR #13 + CI #38677209372 |
 | DGII-01 | Integración fiscal desde fuente oficial vigente | definido | drafts 31/32/34 + XML XSD-valid; sin firma/envío |
 | OFF-01 | Preparación arquitectónica para offline | definido | ADR-005 |
 
@@ -59,7 +59,7 @@ Snapshot fiscal + XML preview 31/32 verificados.
 
 XSD oficiales 31/32 + validación local verificados.
 
-Proveedor de secuencias e-NCF por ambiente en implementación/verificación.
+Proveedor de secuencias e-NCF por ambiente verificado con idempotencia y reserva concurrente sobre PostgreSQL.
 
 Siguiente slice recomendado:
 1. modelar ciclo de certificado sin guardar secretos en repo;
