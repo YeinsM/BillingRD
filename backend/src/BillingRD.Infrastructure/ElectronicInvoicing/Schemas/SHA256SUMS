@@ -1,0 +1,4 @@
+# Official DGII e-CF XSD manifest
+# Retrieved in GitHub Actions from the URLs declared in schema-sources.txt
+6f2909a93d84919518d2ae3c77fead4b35c3e8c95996b8af67b0040c2e2be298  backend/src/BillingRD.Infrastructure/ElectronicInvoicing/Schemas/ecf-31-v1.0.official.xsd
+151676df03c61335b4ac1eca97f99395488d57ea92793b49353602871e651f3c  backend/src/BillingRD.Infrastructure/ElectronicInvoicing/Schemas/ecf-32-v1.0.official.xsd
