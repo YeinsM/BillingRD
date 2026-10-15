@@ -21,7 +21,11 @@ public static class ElectronicInvoicingEndpoints
         drafts.MapPost("/invoice/{invoiceId:guid}", CreateInvoiceDraftAsync);
         drafts.MapPost("/credit-note/from-adjustment/{adjustmentId:guid}", CreateCreditNoteDraftAsync);
         drafts.MapGet("/{draftId:guid}", GetDraftAsync);
+        drafts.MapPost("/{draftId:guid}/e-ncf", AllocateENcfAsync);
         drafts.MapPost("/{draftId:guid}/xml-preview", GenerateXmlPreviewAsync);
+
+        var sequenceRanges = endpoints.MapGroup("/api/electronic-invoicing/sequence-ranges").RequireAuthorization();
+        sequenceRanges.MapPost("/", CreateSequenceRangeAsync);
 
         return endpoints;
     }
@@ -362,6 +366,208 @@ public static class ElectronicInvoicingEndpoints
         }
     }
 
+    private static async Task<IResult> CreateSequenceRangeAsync(
+        CreateSequenceRangeRequest request,
+        HttpContext httpContext,
+        CurrentBusinessContext currentBusiness,
+        BillingDbContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        if (!currentBusiness.BusinessId.HasValue)
+            return Results.Conflict(new { message = "Select an active business before configuring e-NCF sequences." });
+
+        if (!Guid.TryParse(httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            return Results.Unauthorized();
+
+        if (!await CanPrepareFiscalDraftAsync(dbContext, currentBusiness.BusinessId.Value, userId, cancellationToken))
+            return Results.Forbid();
+
+        if (!Enum.IsDefined(request.Environment) || !Enum.IsDefined(request.Type))
+        {
+            return Results.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["sequenceRange"] = ["A valid e-CF environment and type are required."]
+            });
+        }
+
+        var overlaps = await dbContext.EcfSequenceRanges
+            .AnyAsync(x =>
+                x.Environment == request.Environment &&
+                x.Type == request.Type &&
+                x.IsActive &&
+                request.FromNumber <= x.ToNumber &&
+                request.ToNumber >= x.FromNumber,
+                cancellationToken);
+
+        if (overlaps)
+            return Results.Conflict(new { message = "An active overlapping e-NCF range already exists for this environment and e-CF type." });
+
+        EcfSequenceRange range;
+        try
+        {
+            range = EcfSequenceRange.Create(
+                currentBusiness.BusinessId.Value,
+                request.Environment,
+                request.Type,
+                request.FromNumber,
+                request.ToNumber,
+                request.NextNumber,
+                request.ExpirationDate);
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.ValidationProblem(new Dictionary<string, string[]> { ["sequenceRange"] = [ex.Message] });
+        }
+
+        dbContext.EcfSequenceRanges.Add(range);
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return Results.Created($"/api/electronic-invoicing/sequence-ranges/{range.Id}", new
+        {
+            range.Id,
+            range.Environment,
+            ecfType = (int)range.Type,
+            ecfTypeName = range.Type.ToString(),
+            range.FromNumber,
+            range.ToNumber,
+            range.NextNumber,
+            range.ExpirationDate,
+            range.IsActive,
+            range.CreatedAtUtc
+        });
+    }
+
+    private static async Task<IResult> AllocateENcfAsync(
+        Guid draftId,
+        AllocateENcfRequest request,
+        HttpContext httpContext,
+        CurrentBusinessContext currentBusiness,
+        BillingDbContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        if (!currentBusiness.BusinessId.HasValue)
+            return Results.Conflict(new { message = "Select an active business before allocating an e-NCF." });
+
+        if (!Guid.TryParse(httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            return Results.Unauthorized();
+
+        if (!await CanPrepareFiscalDraftAsync(dbContext, currentBusiness.BusinessId.Value, userId, cancellationToken))
+            return Results.Forbid();
+
+        if (!Enum.IsDefined(request.Environment))
+        {
+            return Results.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["environment"] = ["A valid e-CF environment is required."]
+            });
+        }
+
+        var existing = await dbContext.EcfSequenceAllocations
+            .AsNoTracking()
+            .SingleOrDefaultAsync(x => x.DraftId == draftId, cancellationToken);
+
+        if (existing is not null)
+        {
+            if (existing.Environment != request.Environment)
+                return Results.Conflict(new { message = "This fiscal draft already has an e-NCF allocated in another environment." });
+
+            return BuildSequenceAllocationResult(existing, StatusCodes.Status200OK);
+        }
+
+        var draft = await dbContext.ElectronicFiscalDocumentDrafts
+            .AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == draftId, cancellationToken);
+
+        if (draft is null)
+            return Results.NotFound();
+
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+        var range = await dbContext.EcfSequenceRanges
+            .FromSqlInterpolated($"""
+                SELECT *
+                FROM ecf_sequence_ranges
+                WHERE "BusinessId" = {currentBusiness.BusinessId.Value}
+                  AND "Environment" = {request.Environment.ToString()}
+                  AND "Type" = {(int)draft.Type}
+                  AND "IsActive" = TRUE
+                  AND "NextNumber" <= "ToNumber"
+                ORDER BY "CreatedAtUtc", "Id"
+                LIMIT 1
+                FOR UPDATE
+                """)
+            .SingleOrDefaultAsync(cancellationToken);
+
+        if (range is null)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Results.Conflict(new
+            {
+                message = "No available e-NCF sequence range exists for this environment and e-CF type."
+            });
+        }
+
+        string eNcf;
+        try
+        {
+            eNcf = range.ReserveNext();
+        }
+        catch (InvalidOperationException ex)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Results.Conflict(new { message = ex.Message });
+        }
+
+        var allocation = EcfSequenceAllocation.Create(
+            currentBusiness.BusinessId.Value,
+            draft.Id,
+            range,
+            eNcf);
+
+        dbContext.EcfSequenceAllocations.Add(allocation);
+
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            dbContext.ChangeTracker.Clear();
+
+            var concurrent = await dbContext.EcfSequenceAllocations
+                .AsNoTracking()
+                .SingleOrDefaultAsync(x => x.DraftId == draftId, cancellationToken);
+
+            if (concurrent is null)
+                throw;
+
+            if (concurrent.Environment != request.Environment)
+                return Results.Conflict(new { message = "This fiscal draft already has an e-NCF allocated in another environment." });
+
+            return BuildSequenceAllocationResult(concurrent, StatusCodes.Status200OK);
+        }
+
+        return BuildSequenceAllocationResult(allocation, StatusCodes.Status201Created);
+    }
+
+    private static IResult BuildSequenceAllocationResult(EcfSequenceAllocation allocation, int statusCode) =>
+        Results.Json(new
+        {
+            allocation.Id,
+            allocation.DraftId,
+            allocation.Environment,
+            ecfType = (int)allocation.Type,
+            ecfTypeName = allocation.Type.ToString(),
+            eNcf = allocation.ENcf,
+            allocation.ExpirationDate,
+            allocation.AllocatedAtUtc,
+            issued = false,
+            digitallySigned = false,
+            submittedToDgii = false
+        }, statusCode: statusCode);
+
     private static Task<bool> CanPrepareFiscalDraftAsync(
         BillingDbContext dbContext,
         Guid businessId,
@@ -443,5 +649,13 @@ public static class ElectronicInvoicingEndpoints
         }, statusCode: statusCode);
 
     public sealed record CreateInvoiceDraftRequest(EcfType Type);
+    public sealed record CreateSequenceRangeRequest(
+        EcfEnvironment Environment,
+        EcfType Type,
+        long FromNumber,
+        long ToNumber,
+        long? NextNumber,
+        DateOnly? ExpirationDate);
+    public sealed record AllocateENcfRequest(EcfEnvironment Environment);
     public sealed record XmlPreviewRequest(string ENcf, DateOnly? SequenceExpiration);
 }
