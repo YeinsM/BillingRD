@@ -336,6 +336,41 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.ToTable("adjustment_documents");
         });
 
+        modelBuilder.Entity("BillingRD.Domain.ElectronicInvoicing.EcfSequenceRange", b =>
+        {
+            b.Property<Guid>("Id").ValueGeneratedNever().HasColumnType("uuid");
+            b.Property<Guid>("BusinessId").HasColumnType("uuid");
+            b.Property<DateTimeOffset>("CreatedAtUtc").HasColumnType("timestamp with time zone");
+            b.Property<string>("Environment").IsRequired().HasMaxLength(24).HasColumnType("character varying(24)");
+            b.Property<DateOnly?>("ExpirationDate").HasColumnType("date");
+            b.Property<long>("FromNumber").HasColumnType("bigint");
+            b.Property<bool>("IsActive").HasColumnType("boolean");
+            b.Property<long>("NextNumber").HasColumnType("bigint");
+            b.Property<long>("ToNumber").HasColumnType("bigint");
+            b.Property<int>("Type").HasColumnType("integer");
+            b.HasKey("Id");
+            b.HasIndex("BusinessId", "Environment", "Type", "IsActive");
+            b.ToTable("ecf_sequence_ranges");
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.ElectronicInvoicing.EcfSequenceAllocation", b =>
+        {
+            b.Property<Guid>("Id").ValueGeneratedNever().HasColumnType("uuid");
+            b.Property<DateTimeOffset>("AllocatedAtUtc").HasColumnType("timestamp with time zone");
+            b.Property<Guid>("BusinessId").HasColumnType("uuid");
+            b.Property<Guid>("DraftId").HasColumnType("uuid");
+            b.Property<string>("ENcf").IsRequired().HasMaxLength(13).HasColumnType("character varying(13)");
+            b.Property<string>("Environment").IsRequired().HasMaxLength(24).HasColumnType("character varying(24)");
+            b.Property<DateOnly?>("ExpirationDate").HasColumnType("date");
+            b.Property<Guid>("SequenceRangeId").HasColumnType("uuid");
+            b.Property<int>("Type").HasColumnType("integer");
+            b.HasKey("Id");
+            b.HasIndex("DraftId").IsUnique();
+            b.HasIndex("SequenceRangeId");
+            b.HasIndex("BusinessId", "Environment", "ENcf").IsUnique();
+            b.ToTable("ecf_sequence_allocations");
+        });
+
         modelBuilder.Entity("BillingRD.Domain.ElectronicInvoicing.ElectronicFiscalDocumentDraft", b =>
         {
             b.Property<Guid>("Id").ValueGeneratedNever().HasColumnType("uuid");
@@ -784,6 +819,36 @@ partial class BillingDbContextModelSnapshot : ModelSnapshot
             b.HasOne("BillingRD.Domain.Sales.Sale", null)
                 .WithMany()
                 .HasForeignKey("SaleId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.ElectronicInvoicing.EcfSequenceRange", b =>
+        {
+            b.HasOne("BillingRD.Domain.Businesses.Business", null)
+                .WithMany()
+                .HasForeignKey("BusinessId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+        });
+
+        modelBuilder.Entity("BillingRD.Domain.ElectronicInvoicing.EcfSequenceAllocation", b =>
+        {
+            b.HasOne("BillingRD.Domain.Businesses.Business", null)
+                .WithMany()
+                .HasForeignKey("BusinessId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.ElectronicInvoicing.ElectronicFiscalDocumentDraft", null)
+                .WithMany()
+                .HasForeignKey("DraftId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            b.HasOne("BillingRD.Domain.ElectronicInvoicing.EcfSequenceRange", null)
+                .WithMany()
+                .HasForeignKey("SequenceRangeId")
                 .OnDelete(DeleteBehavior.Restrict)
                 .IsRequired();
         });
