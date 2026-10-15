@@ -44,6 +44,8 @@ public sealed class BillingDbContext(
     public DbSet<ElectronicFiscalDocumentDraft> ElectronicFiscalDocumentDrafts => Set<ElectronicFiscalDocumentDraft>();
     public DbSet<FiscalDraftLine> FiscalDraftLines => Set<FiscalDraftLine>();
     public DbSet<FiscalDraftPayment> FiscalDraftPayments => Set<FiscalDraftPayment>();
+    public DbSet<EcfSequenceRange> EcfSequenceRanges => Set<EcfSequenceRange>();
+    public DbSet<EcfSequenceAllocation> EcfSequenceAllocations => Set<EcfSequenceAllocation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -70,5 +72,7 @@ public sealed class BillingDbContext(
         modelBuilder.Entity<ElectronicFiscalDocumentDraft>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
         modelBuilder.Entity<FiscalDraftLine>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
         modelBuilder.Entity<FiscalDraftPayment>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
+        modelBuilder.Entity<EcfSequenceRange>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
+        modelBuilder.Entity<EcfSequenceAllocation>().HasQueryFilter(entity => entity.BusinessId == CurrentBusinessId);
     }
 }
