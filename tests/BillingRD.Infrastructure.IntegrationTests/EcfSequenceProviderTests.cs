@@ -183,10 +183,11 @@ public sealed class EcfSequenceProviderTests
         await using var verificationScope = factory.Services.CreateAsyncScope();
         var verificationDb = verificationScope.ServiceProvider.GetRequiredService<BillingDbContext>();
 
-        Assert.Equal(2, await verificationDb.EcfSequenceAllocations.CountAsync());
-        Assert.Equal(2, await verificationDb.EcfSequenceRanges.CountAsync());
+        Assert.Equal(4, await verificationDb.EcfSequenceAllocations.IgnoreQueryFilters().CountAsync());
+        Assert.Equal(2, await verificationDb.EcfSequenceRanges.IgnoreQueryFilters().CountAsync());
 
         var ranges = await verificationDb.EcfSequenceRanges
+            .IgnoreQueryFilters()
             .OrderBy(x => x.Environment)
             .Select(x => new { x.Environment, x.NextNumber })
             .ToListAsync();
