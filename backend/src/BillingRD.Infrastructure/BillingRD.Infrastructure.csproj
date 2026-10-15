@@ -17,4 +17,9 @@
     <ProjectReference Include="..\BillingRD.Application\BillingRD.Application.csproj" />
     <ProjectReference Include="..\BillingRD.Domain\BillingRD.Domain.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="ElectronicInvoicing\Schemas\ecf-31-v1.0.official.xsd" />
+    <EmbeddedResource Include="ElectronicInvoicing\Schemas\ecf-32-v1.0.official.xsd" />
+  </ItemGroup>
 </Project>
