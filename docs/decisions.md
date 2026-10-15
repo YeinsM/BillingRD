@@ -227,3 +227,25 @@ digitallySigned=false y submittableToDgii=false: XSD válido no equivale a firma
 IndicadorFacturacion usa los valores numéricos oficiales: 1=18%, 2=16%, 3=0%, 4=Exento.
 La actualización futura de XSD es explícita mediante el workflow manual "Sync DGII e-CF schemas"; cualquier cambio de
 hash requiere revisión de código/ADR antes de actualizar los hashes pinneados.
+
+## ADR-019 — Secuencias e-NCF separadas por ambiente — 2026-10-14
+Estado: adoptado.
+
+BillingRD modela los rangos e-NCF por Business + Environment + EcfType. Los ambientes reconocidos son
+PreCertification, Certification y Production. Una numeración idéntica puede existir en ambientes distintos porque
+su contexto fiscal no es intercambiable; Production es el único ambiente de los tres con validez fiscal operativa.
+
+Cada rango conserva inicio, fin, próximo secuencial y fecha de vencimiento opcional. La forma canónica del e-NCF se
+genera como serie E + tipo e-CF de dos dígitos + secuencial de diez dígitos. La asignación a un draft se persiste en
+EcfSequenceAllocation y es 1:1: reintentos del mismo draft devuelven el mismo e-NCF y no consumen otro número.
+
+La asignación local de un e-NCF NO equivale a emisión fiscal. El resultado mantiene issued=false,
+digitallySigned=false y submittedToDgii=false. Los rangos de producción deben provenir de numeraciones efectivamente
+autorizadas al contribuyente; BillingRD no inventa ni solicita secuencias a DGII en esta fase.
+
+Motivo: aislar la numeración fiscal de la generación XML, la firma y el transporte evita mezclar pruebas con
+producción, impide duplicar secuencias por reintentos y deja una frontera auditable para integrar posteriormente
+certificados, XMLDSig y servicios DGII.
+
+Fuente de diseño verificada el 2026-10-14: documentación oficial DGII de Facturación Electrónica, incluyendo la
+estructura e-NCF y la separación de ambientes de pre-certificación, certificación y producción.
