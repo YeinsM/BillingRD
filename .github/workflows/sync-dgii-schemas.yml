@@ -1,0 +1,55 @@
+name: Sync DGII e-CF schemas
+
+on:
+  push:
+    branches:
+      - "codex/dgii-xsd-validation"
+    paths:
+      - ".github/workflows/sync-dgii-schemas.yml"
+      - "backend/src/BillingRD.Infrastructure/ElectronicInvoicing/Schemas/schema-sources.txt"
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Download official DGII schemas
+        shell: bash
+        run: |
+          set -euo pipefail
+          dir="backend/src/BillingRD.Infrastructure/ElectronicInvoicing/Schemas"
+          mkdir -p "$dir"
+
+          url31="https://ws945695e.dgii.gov.do/cicloContribuyente/facturacion/comprobantesFiscalesElectronicosE-CF/Documentacin%20sobre%20eCF/Documentaci%C3%B3n%20T%C3%A9cnica%20%28XSD%29/e-CF%2031%20v.1.0.xsd"
+          url32="https://ws945695e.dgii.gov.do/cicloContribuyente/facturacion/comprobantesFiscalesElectronicosE-CF/Documentacin%20sobre%20eCF/Documentaci%C3%B3n%20T%C3%A9cnica%20%28XSD%29/e-CF%2032%20v.1.0.xsd"
+
+          curl --fail --location --retry 4 --retry-delay 3 "$url31" -o "$dir/ecf-31-v1.0.official.xsd"
+          curl --fail --location --retry 4 --retry-delay 3 "$url32" -o "$dir/ecf-32-v1.0.official.xsd"
+
+          {
+            echo "# Official DGII e-CF XSD manifest"
+            echo "# Retrieved in GitHub Actions from the URLs declared in schema-sources.txt"
+            sha256sum "$dir/ecf-31-v1.0.official.xsd"
+            sha256sum "$dir/ecf-32-v1.0.official.xsd"
+          } > "$dir/SHA256SUMS"
+
+      - name: Commit schemas and hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/src/BillingRD.Infrastructure/ElectronicInvoicing/Schemas
+          if git diff --cached --quiet; then
+            echo "Official schemas are unchanged."
+            exit 0
+          fi
+          git commit -m "chore: vendor official DGII e-CF 31/32 schemas"
+          git push origin HEAD:"${GITHUB_REF_NAME}"
