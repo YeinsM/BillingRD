@@ -119,3 +119,40 @@ internal sealed class ElectronicFiscalDocumentDraftConfiguration : IEntityTypeCo
         builder.Navigation(x => x.Payments).UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }
+
+
+internal sealed class EcfSequenceRangeConfiguration : IEntityTypeConfiguration<EcfSequenceRange>
+{
+    public void Configure(EntityTypeBuilder<EcfSequenceRange> builder)
+    {
+        builder.ToTable("ecf_sequence_ranges");
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Environment).HasConversion<string>().HasMaxLength(24);
+        builder.Property(x => x.Type).HasConversion<int>();
+        builder.Property(x => x.ExpirationDate).HasColumnType("date");
+
+        builder.HasIndex(x => new { x.BusinessId, x.Environment, x.Type, x.IsActive });
+
+        builder.HasOne<Business>().WithMany().HasForeignKey(x => x.BusinessId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+internal sealed class EcfSequenceAllocationConfiguration : IEntityTypeConfiguration<EcfSequenceAllocation>
+{
+    public void Configure(EntityTypeBuilder<EcfSequenceAllocation> builder)
+    {
+        builder.ToTable("ecf_sequence_allocations");
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Environment).HasConversion<string>().HasMaxLength(24);
+        builder.Property(x => x.Type).HasConversion<int>();
+        builder.Property(x => x.ENcf).HasMaxLength(13).IsRequired();
+        builder.Property(x => x.ExpirationDate).HasColumnType("date");
+
+        builder.HasIndex(x => new { x.BusinessId, x.Environment, x.ENcf }).IsUnique();
+        builder.HasIndex(x => x.DraftId).IsUnique();
+
+        builder.HasOne<Business>().WithMany().HasForeignKey(x => x.BusinessId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<ElectronicFiscalDocumentDraft>().WithMany().HasForeignKey(x => x.DraftId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<EcfSequenceRange>().WithMany().HasForeignKey(x => x.SequenceRangeId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
