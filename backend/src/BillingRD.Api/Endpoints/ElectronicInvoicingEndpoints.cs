@@ -326,12 +326,27 @@ public static class ElectronicInvoicingEndpoints
         try
         {
             var xml = DgiiEcfXmlPreviewGenerator.Generate(draft, request.ENcf, request.SequenceExpiration);
+            var validation = DgiiEcfSchemaValidator.Validate(draft.Type, xml);
+
+            if (!validation.IsValid)
+            {
+                return Results.UnprocessableEntity(new
+                {
+                    message = "The generated XML does not conform to the pinned official DGII XSD.",
+                    schemaSha256 = validation.SchemaSha256,
+                    officialSchemaNormalizedInMemory = validation.OfficialSchemaNormalizedInMemory,
+                    errors = validation.Errors
+                });
+            }
+
             return Results.Ok(new
             {
                 draft.Id,
                 ecfType = (int)draft.Type,
                 previewOnly = true,
-                schemaValidation = "preflight-only",
+                schemaValidation = "official-xsd-valid",
+                schemaSha256 = validation.SchemaSha256,
+                officialSchemaNormalizedInMemory = validation.OfficialSchemaNormalizedInMemory,
                 digitallySigned = false,
                 submittableToDgii = false,
                 xml
