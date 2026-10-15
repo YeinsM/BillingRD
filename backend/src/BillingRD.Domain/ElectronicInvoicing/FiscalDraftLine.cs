@@ -28,7 +28,7 @@ public sealed class FiscalDraftLine
             ItbisCategory.Standard => "1",
             ItbisCategory.Reduced => "2",
             ItbisCategory.ZeroRated => "3",
-            ItbisCategory.Exempt => "E",
+            ItbisCategory.Exempt => "4",
             _ => throw new ArgumentOutOfRangeException(nameof(line.ItbisCategory))
         };
         Quantity = line.Quantity;

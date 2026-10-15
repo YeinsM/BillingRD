@@ -139,6 +139,21 @@ public sealed class FiscalInvoiceDraftTests
         var acceptedJson = await accepted.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("PASSPORT-123", acceptedJson.GetProperty("buyer").GetProperty("foreignIdentifier").GetString());
         Assert.Equal(250000m, acceptedJson.GetProperty("total").GetDecimal());
+
+        var acceptedDraftId = acceptedJson.GetProperty("id").GetGuid();
+        var preview = await client.PostAsJsonAsync(
+            $"/api/electronic-invoicing/drafts/{acceptedDraftId}/xml-preview",
+            new { eNcf = "E320000000001", sequenceExpiration = (string?)null });
+        Assert.Equal(HttpStatusCode.OK, preview.StatusCode);
+
+        var previewJson = await preview.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("official-xsd-valid", previewJson.GetProperty("schemaValidation").GetString());
+        Assert.Equal(
+            "151676df03c61335b4ac1eca97f99395488d57ea92793b49353602871e651f3c",
+            previewJson.GetProperty("schemaSha256").GetString());
+        Assert.False(previewJson.GetProperty("officialSchemaNormalizedInMemory").GetBoolean());
+        Assert.False(previewJson.GetProperty("digitallySigned").GetBoolean());
+        Assert.False(previewJson.GetProperty("submittableToDgii").GetBoolean());
     }
 
     private static async Task<WebApplicationFactory<Program>> CreateFactoryAsync()

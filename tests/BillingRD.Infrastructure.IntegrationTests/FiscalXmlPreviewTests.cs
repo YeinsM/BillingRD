@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Xml.Linq;
 using BillingRD.Infrastructure.Persistence;
+using BillingRD.Infrastructure.ElectronicInvoicing;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -100,7 +101,9 @@ public sealed class FiscalXmlPreviewTests
         Assert.True(preview.GetProperty("previewOnly").GetBoolean());
         Assert.False(preview.GetProperty("digitallySigned").GetBoolean());
         Assert.False(preview.GetProperty("submittableToDgii").GetBoolean());
-        Assert.Equal("preflight-only", preview.GetProperty("schemaValidation").GetString());
+        Assert.Equal("official-xsd-valid", preview.GetProperty("schemaValidation").GetString());
+        Assert.Equal("6f2909a93d84919518d2ae3c77fead4b35c3e8c95996b8af67b0040c2e2be298", preview.GetProperty("schemaSha256").GetString());
+        Assert.True(preview.GetProperty("officialSchemaNormalizedInMemory").GetBoolean());
 
         var xml = XDocument.Parse(preview.GetProperty("xml").GetString()!);
         Assert.Equal("ECF", xml.Root!.Name.LocalName);
@@ -114,5 +117,30 @@ public sealed class FiscalXmlPreviewTests
         Assert.Equal("100.00", xml.Descendants("MontoGravadoI1").Single().Value);
         Assert.Equal("18.00", xml.Descendants("TotalITBIS").Single().Value);
         Assert.Equal("118.00", xml.Descendants("MontoTotal").Single().Value);
+        Assert.Single(xml.Descendants("FechaHoraFirma"));
+        Assert.Single(xml.Descendants(XName.Get("UnsignedSignaturePlaceholder", "urn:billingrd:unsigned-preview")));
+
+        var directValidation = DgiiEcfSchemaValidator.Validate(
+            BillingRD.Domain.ElectronicInvoicing.EcfType.CreditFiscalInvoice31,
+            preview.GetProperty("xml").GetString()!);
+        Assert.True(directValidation.IsValid);
+        Assert.Empty(directValidation.Errors);
     }
+    [Fact]
+    public void Validator_rejects_xml_that_violates_the_pinned_official_schema()
+    {
+        const string invalidXml = "<ECF><Encabezado><Version>1.0</Version></Encabezado></ECF>";
+
+        var validation = DgiiEcfSchemaValidator.Validate(
+            BillingRD.Domain.ElectronicInvoicing.EcfType.ConsumerInvoice32,
+            invalidXml);
+
+        Assert.False(validation.IsValid);
+        Assert.NotEmpty(validation.Errors);
+        Assert.Equal(
+            "151676df03c61335b4ac1eca97f99395488d57ea92793b49353602871e651f3c",
+            validation.SchemaSha256);
+        Assert.False(validation.OfficialSchemaNormalizedInMemory);
+    }
+
 }

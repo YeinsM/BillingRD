@@ -206,3 +206,24 @@ validar el documento completo, incluida la estructura de firma exigida. Fuente v
 Comprobante Fiscal Electrónico v1.0 y XSD e-CF 31/32 publicados por DGII.
 
 Motivo: preparar una proyección XML trazable y testeable sin confundir un artefacto previo a firma con un e-CF válido.
+
+
+## ADR-018 — XSD DGII pinneados y validación estructural local — 2026-10-14
+Estado: adoptado.
+BillingRD versiona los XSD oficiales DGII e-CF 31/32 v1.0 descargados directamente desde las URLs publicadas por DGII.
+Los archivos oficiales se conservan sin modificaciones y se verifican por SHA-256 antes de usarse:
+- e-CF 31: 6f2909a93d84919518d2ae3c77fead4b35c3e8c95996b8af67b0040c2e2be298
+- e-CF 32: 151676df03c61335b4ac1eca97f99395488d57ea92793b49353602871e651f3c
+
+El XSD 31 publicado por DGII contiene actualmente un espacio inicial en el nombre del tipo
+" IndicadorServicioTodoIncluidoType", mientras el esquema lo referencia sin ese espacio. BillingRD conserva el archivo
+original intacto y, únicamente después de verificar su hash exacto, normaliza ese defecto en memoria para compilar el
+esquema localmente. Si el hash cambia o el defecto deja de existir, la normalización falla cerrada y exige revisión.
+
+El XML preview incluye FechaHoraFirma y un elemento namespaced UnsignedSignaturePlaceholder para satisfacer el
+xs:any final del XSD durante validación estructural. El resultado puede ser official-xsd-valid pero continúa con
+digitallySigned=false y submittableToDgii=false: XSD válido no equivale a firma criptográfica válida ni aceptación DGII.
+
+IndicadorFacturacion usa los valores numéricos oficiales: 1=18%, 2=16%, 3=0%, 4=Exento.
+La actualización futura de XSD es explícita mediante el workflow manual "Sync DGII e-CF schemas"; cualquier cambio de
+hash requiere revisión de código/ADR antes de actualizar los hashes pinneados.
