@@ -130,6 +130,10 @@ public static class DgiiEcfSchemaValidator
                 $"DGII XSD integrity mismatch for {descriptor.FileName}. Expected {descriptor.ExpectedSha256}, got {actualHash}.");
         }
 
-        return (Encoding.UTF8.GetString(bytes), actualHash);
+        var text = Encoding.UTF8.GetString(bytes);
+        if (text.Length > 0 && text[0] == '\uFEFF')
+            text = text[1..];
+
+        return (text, actualHash);
     }
 }
